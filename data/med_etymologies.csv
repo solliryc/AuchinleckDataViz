@@ -1,0 +1,131 @@
+language_id,language_abbrev,language_name
+0,A,Anglian (dialect of Old English)
+1,AF,Anglo-French
+2,AL,Anglo-Latin
+3,AN,Anglo-Norman
+4,Ar.,Arabic
+5,Bret.,Breton
+6,CF,Continental French
+7,CL,Classical Latin
+8,Cat.,Catalan
+9,Celt.,Celtic
+10,Corn.,Cornish
+11,Dan.,Danish
+12,Du.,Dutch
+13,E,English
+14,EFris.,East Frisian
+15,EM,East Midland (dialect of Middle English)
+16,EMnDu.,Early Modern Dutch
+17,EMnE,Early Modern English
+18,EMnScot.,Early Modern Scots
+19,EWS,Early West Saxon
+20,F,French
+21,Faroese,Faroese
+22,Flem.,Flemish
+23,Fris.,Frisian
+24,G,German
+25,Gael.,Gaelic
+26,Gmc.,Germanic
+27,Goth.,Gothic
+28,Gr,Greek
+29,HG,High German
+30,Heb.,Hebrew
+31,Icel.,Icelandic
+32,Ir.,Irish
+33,It.,Italian
+34,Jutland,Jutish
+35,K,Kentish (dialect of Old or Middle English)
+36,L,Latin
+37,LG,Low German
+38,LL,Late Latin
+39,LOE,Late Old English
+40,LWS,Late West Saxon
+41,Latinate,Latinate
+42,M,Midland (dialects of Middle English)
+43,MDan.,Middle Danish
+44,MDu.,Middle Dutch
+45,ME,Middle English
+46,MF,Middle French
+47,MFlem.,Middle Flemish
+48,MHG,Middle High German
+49,MIr.,Middle Irish
+50,ML,Medieval Latin
+51,MLG,Middle Low German
+52,MScot.,Middle Scots
+53,MSwed.,Middle Swedish
+54,MWel.,Middle Welsh
+55,Merc.,Mercian (dialect of Old English)
+56,MnDu.,Modern Dutch
+57,MnE,Modern English
+58,MnF,Modern French
+59,MnG,Modern German
+60,MnIcel.,Modern Icelandic
+61,MnIr.,Modern Irish
+62,MnL (16th cent.),Neo-Latin
+63,MnNorw.,Modern Norwegian
+64,MnSc.Gael.,Modern Scottish Gaelic
+65,MnScot.,Modern Scots
+66,N,Northern (dialect of Middle English)
+67,NF,Northern French
+68,NM,North Midland (dialect of Middle English)
+69,NWM,Northwest Midland (dialect of Middle English)
+70,Nhb.,Northumbrian (dialect of Old or Middle English)
+71,Norman,
+72,North German,North German
+73,Norw.,Norwegian
+74,ODan.,Old Danish
+75,OE,Old English
+76,OF,Old French
+77,OFlem.,Old Flemish
+78,OFris.,Old Frisian
+79,OGascon,Old Gascon
+80,OHG,Old High German
+81,OI,Old Icelandic
+82,OIr.,Old Irish
+83,OIt.,Old Italian
+84,OK,Kentish (dialect of Old English)
+85,OLFc.,Old Low Franconian
+86,OLG,Old Low German
+87,ON,Old Norse
+88,ONF,Old Northern French
+89,ONhb.,Northumbrian (dialect of Old English)
+90,ONorw.,Old Norwegian
+91,OPic.,Old Picard
+92,OPort.,Old Portuguese
+93,OProv.,Old Provencal
+94,OS,Old Saxon
+95,OScot.,Older Scots
+96,OSpan.,Old Spanish
+97,OSwed.,Old Swedish
+98,OWGmc,Old West Germanic
+99,OWalloon,Old Walloon
+100,OWel.,Old Welsh
+101,Pers.,Persian
+102,Pgmc.,Proto-Germanic
+103,Pic.,Picard
+104,Port.,Portuguese
+105,Prov.,Provencal
+106,S,Southern (dialects of Middle English)
+107,SE,Southeastern (dialects of Middle English)
+108,SEM,Southeast Midland (dialect of Middle English)
+109,SM,South Midland (dialects of Middle English)
+110,SW,Southwestern (dialects of Middle English)
+111,SWM,Southwest Midland (dialect of Middle English)
+112,Sc.Gael.,Scottish Gaelic
+113,Scand.,Scandinavian
+114,Scot.,Scots
+115,Shetl.,Shetlandic
+116,Skt.,Sanskrit
+117,Span.,Spanish
+118,Swed.,Swedish
+119,VL,Vulgar Latin
+120,WFlem.,West Flemish
+121,WFris.,West Frisian
+122,WGmc.,West Germanic
+123,WM,West Midland (dialects of Middle English)
+124,WS,West Saxon (dialect of Old English)
+125,Walloon,Walloon
+126,Wel.,Welsh
+127,Western,Western (dialects of Middle English)
+128,nEM,Northeast Midland (dialect of Middle English)
+129,pseudo-Latin,pseudo-Latin
