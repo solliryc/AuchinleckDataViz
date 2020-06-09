@@ -1,23 +1,24 @@
+// initialize variables
 var lexiconData = [];
-var etymologiesData = [];
+var etymologyData = [];
+var chapterTitleData = [];
 var frenchEtymologies = [];
 var words = [];
 
-/* d3.csv('../data/test_lexicon.csv', function(d){
-    lexicon_array.push(d)
-    return {
-        lexicon_array
-    }
-}).then(function(data) {
-    console.log(lexicon_array)
-    for (let i = 0; i < lexicon_array.length; i++) {
-        const entry = lexicon_array[i];
-        if (entry.french_etymology == 1) {
-            console.log(entry.lexicon_word, entry.french_etymology)
-        }
-        
-    }
-}); */
+// initialize constant variables
+const frenchAbbrevList = ['AF', 'AN', 'CF', 'F', 'MF', 'MnF', 'NF', 'OF', 'ONF', 'OProv.', 'Prov.']
+const latinAbbrevList = []
+const etymologyCategoryLabels = [
+    {category_key:'french_etymology', category_name: 'French-based words'},
+    {category_key:'latin_etymology', category_name: 'Latin-based words'},
+    {category_key:'other_etymology', category_name: 'Other etymology'},
+    {category_key:'unknown_etymology', category_name: 'Unknown etymology'}
+]
+
+// initialize variables with value
+var height = 300;
+var width = 600;
+var margin = ({top: 20, right: 20, bottom: 20, left: 40})
 
 function setup () {
 	// Charger les données (Attention: opération asynchrone !)
@@ -31,21 +32,10 @@ function loadData() {
     Promise.all([
         d3.csv('../data/med_merge_lexicon_chapters_final_v2.csv'),
         d3.csv('../data/med_etymologies.csv'),
+        d3.csv('../data/chapters_title.csv'),
     ]).then(function(files){
         onDataLoaded(files)
     })
-    /*
-	d3.csv('../data/test_lexicon.csv', function (d) {
-		return {
-            d
-            //lexiconWord: d.lexicon_word,
-			//station: d.stn,
-			//year: parseInt(d.time.substr(0, 4)),
-			//month: parseInt(d.time.substr(4, 2)),
-            //temp_moy: parseFloat(d.tre200m0)
-		}
-    }).then(onDataLoaded);
-    */
 }
 
 function onDataLoaded(data) {
@@ -53,71 +43,150 @@ function onDataLoaded(data) {
     // script. Permettant ainsi d'utiliser ces données dans d'autres fonctions
     console.log(data)
     lexiconData = data[0]
-    etymologiesData = data[1]
-    frenchAbbrevList = ['AF', 'AN', 'CF', 'F', 'MF', 'MnF', 'NF', 'OF', 'ONF', 'OProv.', 'Prov.']
-    console.log(lexiconData)
-    console.log(etymologiesData)
-    console.log(frenchAbbrevList)
+    etymologyData = data[1]
+    chapterTitleData = data[2]
     
-    etymologiesData.forEach(etymology => {
+    etymologyData.forEach(etymology => {
         abbrev = etymology.language_abbrev
         name = etymology.language_name
         if (frenchAbbrevList.includes(abbrev)) {
             frenchEtymologies.push({'language_abbrev': abbrev, 'language_name': name})
         }
-        //console.log(etymology.language_abbrev, etymology.language_name)
     });
 
     lexiconData.forEach(entry => {
         words.push(entry.lexicon_word)
     });
     console.log(frenchEtymologies)
+    displayCategoryChart()
+
 }
 
-setup();
+function displayCategoryChart() {
+    // create svg object
+    const svg = d3.select('.main')
+        .append('svg')
+            .attr('width', width)
+            .attr('height', height)
+
+    console.log(svg)
+
+    var etymologyCategoryData = []
+    etymologyCategoryLabels.forEach(category => {
+        totalCategory = d3.sum(lexiconData, function(d) {return +d[category.category_key]})
+        etymologyCategoryData.push({total: totalCategory, label: category.category_name})
+    });
+    console.log(etymologyCategoryData)
+
+    // initialize chart variables
+    var chart_height = height - margin.bottom
+    var chart_width = width - margin.right
+    var duration = 800
+    var delay = 200
+    var y_max = d3.max(etymologyCategoryData, function(d) {return +d.total})
+    console.log(y_max)
+
+    // create vertical scale
+    const y = d3.scaleLinear()
+        .domain([0, y_max])
+        .range([chart_height, margin.top])
+        .interpolate(d3.interpolateRound)
+
+    const x = d3.scaleBand()
+        .domain(etymologyCategoryData.map(d => d.label))
+        .range([margin.left, chart_width])
+        .padding(0.1)
+        .round(true)
+    
+    const teinte = d3.scaleSequential()
+        .domain([0, y_max])
+        .interpolator(d3.interpolateBlues)
+
+    // add bars to chart
+    svg.append('g')
+        .selectAll('rect')
+        .data(etymologyCategoryData)
+        .enter()
+        .append('rect')
+            .attr('height', chart_height - y(0))
+            .attr('width', x.bandwidth())
+            .attr('y', y(0))
+            .attr('x', d => x(d.label))
+            .style('fill', d=> teinte(d.total))
+
+    svg.append('g')
+        .attr("transform", `translate(0, ${chart_height})`)
+        .call(d3.axisBottom(x))
+
+    svg.append('g')
+        .attr('transform', `translate(${margin.left}, 0)`)
+        .call(d3.axisLeft(y))
+
+    // Animation
+    svg.selectAll('rect')
+        .transition()
+        .duration(duration)
+        .attr("y", function(d) {return y(d.total);})
+        .attr("height", function(d) {return chart_height - y(d.total);})
+        .delay((d,i) => {return(i*delay)})
+
+    // add titles
+    svg.append('g')
+        .style('fill', 'dark')
+        //.attr('visibility', 'hidden')
+        .attr('text-anchor', 'middle')
+        .attr('transform', `translate(${x.bandwidth() / 2}, 10)`)
+        .selectAll('text')
+        .data(etymologyCategoryData)
+        .enter()
+        .append('text')
+            .attr('fill-opacity', 0)
+            .attr('y', d => y(d.total))
+            .attr('x', d => x(d.label))
+            .attr('dy', '0.35em')
+            .text(d => d.total)
+            .transition()
+                .duration(duration)
+                .delay((d,i) => {return(i*delay + duration)})
+                .attr('fill-opacity', 1)
+                //.attr('visibility', 'visible')
+                //.attr('y', d => y(d.total))
+}
 
 function displaySearchResult() {
-    var x = document.getElementById("searchResult")
-    if (x.style.display === 'none') {
-        x.style.display = 'inline-block'
-    }
     searchValue = document.getElementById("searchWord").value
     // if a non-empty string has been submitted
     if (searchValue) {
+        // make the DIV where the search result appears visible
+        var x = document.getElementById("searchResult")
+        if (x.style.display === 'none') {
+            x.style.display = 'inline-block'
+        }
         // search the string in the lexicon
         lexiconEntry = searchWordInLexicon(searchValue)
         // if the string exists in lexicon
         if (lexiconEntry != undefined) {
             console.log('value found in lexicon')
             console.log(lexiconEntry)
-            // get the word form, year range, MED word, web link to the MED entry, and etymologies of the lexicon entry
-            lexiconWord = lexiconEntry.lexicon_word
-            wordYearRange = lexiconEntry.year_from_1 + "-" + entry.year_to_1
-            medWord = lexiconEntry.med_word
-            medLink = "https://quod.lib.umich.edu/m/middle-english-dictionary/dictionary/MED" + lexiconEntry.med_id
-            wordEtymologies = "Unknown etymology"
-            // iterate over all etymologies to find those of the word (where etymology == 1)
-            etymologiesData.forEach(etymology => {
-                langAbbrev = etymology.language_abbrev
-                langName = etymology.language_name
-                if (lexiconEntry[langAbbrev] == 1) {
-                    if (wordEtymologies == "Unknown etymology") {
-                        wordEtymologies = langName
-                    } else {
-                        wordEtymologies = wordEtymologies + " - " + langName
-                    }
-                }
-            })
+            // get the data from lexicon entry
+            entryData = getEntryData(lexiconEntry)
+            // display the search result
             document.getElementById("searchResult").innerHTML = 
-                "Word: " + lexiconWord + 
-                "</br> Year range: " + wordYearRange +
-                "</br> Etymology: " + wordEtymologies +
-                "</br> MED entry: <a href=" + medLink + " target='_blank'>" + medWord + "</a>";
+                "Word: " + entryData.lexiconWord + 
+                "</br> Year range: " + entryData.yearRange +
+                "</br> Etymology: " + entryData.wordEtymology +
+                "</br> Appears in: " + entryData.wordChapters +
+                "</br> MED entry: <a href=" + entryData.medLink + " target='_blank'>" + entryData.medWord + "</a>";
         } else {
+            // display a message when searched word is not in the lexicon
             document.getElementById("searchResult").innerHTML = "Please enter a word used in Auchinleck Manuscript"
         }
     } else {
-        document.getElementById("searchResult").innerHTML = "Please enter a word"
+        // hide the DIV where the search result appears
+        var x = document.getElementById("searchResult")
+        if (x.style.display === 'inline-block') {
+            x.style.display = 'none'
+        }
     }
 }
 
@@ -127,6 +196,53 @@ function searchWordInLexicon(searchWord) {
             entry = lexiconData[i]
             return entry;
         }
+    }
+}
+
+function getEntryData(lexiconEntry) {
+    // get the word form, year range, MED word, web link to the MED entry, and etymology of the lexicon entry
+    lexiconWord = lexiconEntry.lexicon_word
+    yearRange = lexiconEntry.year_from_1 + "-" + entry.year_to_1
+    medWord = lexiconEntry.med_word
+    medLink = "https://quod.lib.umich.edu/m/middle-english-dictionary/dictionary/MED" + lexiconEntry.med_id
+    wordEtymology = "Unknown etymology"
+    // iterate over all etymologies to find those of the word (where etymology == 1)
+    etymologyData.forEach(etymology => {
+        langAbbrev = etymology.language_abbrev
+        langName = etymology.language_name
+        if (lexiconEntry[langAbbrev] == 1) {
+            if (wordEtymology == "Unknown etymology") {
+                wordEtymology = langName
+            } else {
+                wordEtymology = wordEtymology + " - " + langName
+            }
+        }
+    })
+    wordNbrChapters = lexiconEntry.nbr_texts
+    wordChapters = ""
+    // iterate over all chapter titles to find those where the word appears (where title == 1)
+    chapterTitleData.forEach(chapterTitle => {
+        title_short = chapterTitle.chapter_abbrev
+        title_full = chapterTitle.chapter_title
+        if (wordNbrChapters > 3) {
+            wordChapters = wordNbrChapters + " chapters of Manuscript"
+        } else {
+            if (lexiconEntry[title_short] == 1) {
+                if (wordChapters == "") {
+                    wordChapters = title_full
+                } else {
+                    wordChapters = wordChapters + " - " + title_full
+                }
+            }
+        }
+    })
+    return {
+        lexiconWord: lexiconWord,
+        yearRange: yearRange,
+        medWord: medWord,
+        medLink: medLink,
+        wordEtymology: wordEtymology,
+        wordChapters: wordChapters,
     }
 }
 
@@ -256,3 +372,6 @@ function start() {
             .onSelected(onSelect)
             .render();
 }
+
+setup()
+autocomplete(document.getElementById("searchWord"), words);
