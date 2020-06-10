@@ -1,0 +1,4 @@
+TODO
+- la distribution temporelle des mots (histogramme, axe des x: années, axe des y: nombre de mots). Visualisation interactive pour pouvoir sélectionner une étymologie particulière.
+- la distribution de l'étymologie des mots pour chaque poème (stacked bar chart, axe des x: poèmes, axe des y: nombre de mots pour chaque étymologie). Visualisation interactive pour pouvoir sélectionner les poèmes que l'on veut comparer.
+- une comparaison de la distribution de l'étymologie entre le Manuscript et le Middle English Dictionary. Visualisation interactive pour pouvoir sélectionner les sources à comparer.

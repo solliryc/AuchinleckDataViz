@@ -58,18 +58,101 @@ function onDataLoaded(data) {
         words.push(entry.lexicon_word)
     });
     console.log(frenchEtymologies)
-    displayCategoryChart()
+    displayHistogram()
+    //displayBarChart()
 
 }
 
-function displayCategoryChart() {
+function displayHistogram() {
+    var chart_height = height - margin.bottom
+    var chart_width = width - margin.right
+
+    // to find min that is not 0: use of constant Infinity, since Math.min(Infinity, someNumber) always return someNumber
+    var min_year = d3.min(lexiconData, function(d) {return +d.year_from_1 || Infinity;})
+    var max_year = d3.max(lexiconData, function(d) {return +d.year_from_1})
+    var year_range = 20
+
+    console.log(min_year, max_year)
+    if (min_year % year_range != 0) {
+        console.log(min_year)
+        while (min_year % year_range != 0) {
+            min_year = min_year - 1
+        }
+    }
+    if (max_year % year_range != 0) {
+        console.log(max_year)
+        while (max_year % year_range != 0) {
+            max_year = max_year + 1
+        }
+    }
+    var year_threshold = []
+    var year_step = min_year
+    while (year_step <= max_year) {
+        year_threshold.push(year_step)
+        year_step = year_step + year_range
+    }
+
+    nbr_bins = (max_year - min_year) / year_range
+
+    console.log(min_year, max_year, nbr_bins)
+    console.log(year_threshold)
+
+    const histo_svg = d3.select('.main')
+        .append('svg')
+            .attr("width", width)
+            .attr('height', height)
+        //.append("g")
+        //    .attr("transform", `translate(${margin.left}, ${margin.top})`)
+
+    var x = d3.scaleLinear()
+        .domain([min_year, max_year])
+        .range([margin.left, chart_width]);
+    
+    histo_svg.append("g")
+        .attr("transform", `translate(0, ${chart_height})`)
+        .call(d3.axisBottom(x));
+
+      // set the parameters for the histogram
+    var histogram = d3.histogram()
+        .value(function(d) {return +d.year_from_1})   // I need to give the vector of value
+        .domain(x.domain())  // then the domain of the graphic
+        .thresholds(year_threshold); // then the numbers of bins
+
+    // And apply this function to data to get the bins.
+    var bins = histogram(lexiconData);
+    console.log(bins.length)
+
+    // Y axis: scale and draw:
+    var y = d3.scaleLinear()
+        .range([chart_height, margin.top])
+        .domain([0, d3.max(bins, function(d) {return d.length})]);
+    
+    histo_svg.append("g")
+        .attr("transform", `translate(${margin.left}, 0)`)
+        .call(d3.axisLeft(y));
+
+    bin_width = d3.max(bins, function(d) {return x(d.x1) -x(d.x0) -1})
+    
+    // append the bar rectangles to the svg element
+    histo_svg.selectAll("rect")
+        .data(bins)
+        .enter()
+        .append("rect")
+            .attr("x", 1)
+            .attr("transform", function(d) {return `translate(${x(d.x1)}, ${y(d.length)})`})
+            .attr("width", bin_width)
+            .attr("height", function(d) {return chart_height - y(d.length)})
+            .style("fill", "#69b3a2")
+}
+
+function displayBarChart() {
     // create svg object
-    const svg = d3.select('.main')
+    const bar_chart_svg = d3.select('.main')
         .append('svg')
             .attr('width', width)
             .attr('height', height)
 
-    console.log(svg)
+    console.log(bar_chart_svg)
 
     var etymologyCategoryData = []
     etymologyCategoryLabels.forEach(category => {
@@ -92,18 +175,20 @@ function displayCategoryChart() {
         .range([chart_height, margin.top])
         .interpolate(d3.interpolateRound)
 
+    // create horizontal scale
     const x = d3.scaleBand()
         .domain(etymologyCategoryData.map(d => d.label))
         .range([margin.left, chart_width])
         .padding(0.1)
         .round(true)
     
-    const teinte = d3.scaleSequential()
+    // create color scale
+    const bar_color = d3.scaleSequential()
         .domain([0, y_max])
         .interpolator(d3.interpolateBlues)
 
     // add bars to chart
-    svg.append('g')
+    bar_chart_svg.append('g')
         .selectAll('rect')
         .data(etymologyCategoryData)
         .enter()
@@ -112,18 +197,18 @@ function displayCategoryChart() {
             .attr('width', x.bandwidth())
             .attr('y', y(0))
             .attr('x', d => x(d.label))
-            .style('fill', d=> teinte(d.total))
+            .style('fill', d=> bar_color(d.total))
 
-    svg.append('g')
+    bar_chart_svg.append('g')
         .attr("transform", `translate(0, ${chart_height})`)
         .call(d3.axisBottom(x))
 
-    svg.append('g')
+    bar_chart_svg.append('g')
         .attr('transform', `translate(${margin.left}, 0)`)
         .call(d3.axisLeft(y))
 
     // Animation
-    svg.selectAll('rect')
+    bar_chart_svg.selectAll('rect')
         .transition()
         .duration(duration)
         .attr("y", function(d) {return y(d.total);})
@@ -131,15 +216,14 @@ function displayCategoryChart() {
         .delay((d,i) => {return(i*delay)})
 
     // add titles
-    svg.append('g')
-        .style('fill', 'dark')
-        //.attr('visibility', 'hidden')
+    bar_chart_svg.append('g')
         .attr('text-anchor', 'middle')
         .attr('transform', `translate(${x.bandwidth() / 2}, 10)`)
         .selectAll('text')
         .data(etymologyCategoryData)
         .enter()
         .append('text')
+            .style('fill', d => d3.lab(bar_color(d.total)).l < 60 ? 'white' : 'black')
             .attr('fill-opacity', 0)
             .attr('y', d => y(d.total))
             .attr('x', d => x(d.label))
@@ -149,8 +233,6 @@ function displayCategoryChart() {
                 .duration(duration)
                 .delay((d,i) => {return(i*delay + duration)})
                 .attr('fill-opacity', 1)
-                //.attr('visibility', 'visible')
-                //.attr('y', d => y(d.total))
 }
 
 function displaySearchResult() {
