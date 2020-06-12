@@ -1,9 +1,20 @@
 // initialize variables
+var widthPie = 300
+var heightPie = 300
+
 var lexiconData = [];
 var etymologyData = [];
 var chapterTitleData = [];
 var frenchEtymologies = [];
 var words = [];
+var svgPie = d3.select(".main")
+    .append("svg")
+        .attr('class', 'svg-pie')
+        .style('display', 'none')
+        .attr("width", widthPie)
+        .attr("height", heightPie)
+        .append("g")
+            .attr("transform", `translate(${widthPie/2}, ${heightPie/2})`)
 
 // initialize constant variables
 const frenchAbbrevList = ['AF', 'AN', 'CF', 'F', 'MF', 'MnF', 'NF', 'OF', 'ONF', 'OProv.', 'Prov.']
@@ -45,7 +56,7 @@ function onDataLoaded(data) {
     lexiconData = data[0]
     etymologyData = data[1]
     chapterTitleData = data[2]
-    
+
     etymologyData.forEach(etymology => {
         abbrev = etymology.language_abbrev
         name = etymology.language_name
@@ -57,21 +68,18 @@ function onDataLoaded(data) {
     lexiconData.forEach(entry => {
         words.push(entry.lexicon_word)
     });
-    showChapterHistogram()
-    //showYearHistogram()
-    //showCategoryBarChart()
+
+    autocomplete(document.getElementById("searchWord"), words);    
+    showYearHistogram()
+    showCategoryBarChart()
 }
 
-function showChapterHistogram() {
-    var chartHeight = height - margin.bottom
-    var chartWidth = width - margin.right
-    var widthPie = 450
-    var heightPie = 450
-    var marginPie = 40
-    var entryData = lexiconData.filter(function(d) {return d.lexicon_word == 'faders'})
+d3.select('#searchButton')
+        .on('click', function() {console.log('sdfasf')})
 
-    console.log(entryData)
-    console.log(chapterTitleData)
+function showChapterPie() {
+    var resultWord = document.getElementById('resultWord').innerHTML
+    var entryData = lexiconData.filter(function(d) {return d.lexicon_word == resultWord})
 
     var entryChapterData = []
     chapterTitleData.forEach(chapterData => {
@@ -82,7 +90,6 @@ function showChapterHistogram() {
 
         entryData.forEach(entry => {
             if (entry[chapterOccurrences] != 0) {
-                console.log(chapterOccurrences)
                 entryObject['chapterAbbrev'] = chapterAbbrev
                 entryObject['chapterTitle'] = chapterTitle
                 entryObject['chapterOccurrences'] = entry[chapterOccurrences]
@@ -92,46 +99,85 @@ function showChapterHistogram() {
             entryChapterData.push(entryObject)
         }
     })
-    console.log(entryChapterData)
-    var yMax = d3.max(entryChapterData, function(d) {return +d.chapterOccurrences})
+    console.log('chapter', entryChapterData)
 
-    var arcs = d3.pie()(entryChapterData.map(function(d) {return d.chapterOccurrences}))
-    console.log(arcs[0])
+    // create info bubble to display info when overing mouse on bins
+    var tooltip = d3.select("body")
+        .append("div")
+            .attr("class", "tooltip")
+            .style("position", "absolute")
+            .style("z-index", '10')
+            .style("visibility", "hidden")
+            .style("opacity", 1)
+            .style("background-color", "black")
+            .style("color", "white")
+            .style("border-radius", "5px")
+            .style("padding", "10px")
 
-    var width = 300
-	var height = 300
-	// Think back to 5th grade. Radius is 1/2 of the diameter. What is the limiting factor on the diameter? Width or height, whichever is smaller
-    var radius = Math.min(width, height) / 2
+    // show tooltip when mouse is over a bin
+    var showTooltip = function(d) {
+        tooltipString = `Chapter: ${d.data.chapterTitle}</br>Word occurrences: ${d.data.chapterOccurrences}`
+        tooltip
+            .style('visibility', 'visible')
+            .html(tooltipString)
+        d3.selectAll('path')
+            .style('opacity', 0.6)
+        d3.select(this)
+            .style("stroke", "black")
+            .style('stroke-width', '2px')
+            .style('stroke-opacity', 0)
+            .style("opacity", 1)
+            .style('z-index', '5')
+    }
+
+    // move tooltip when mouse moves over a bin
+    var moveTooltip = function() {
+        tooltip
+            .style("top", (event.pageY-10)+"px")
+            .style("left", (event.pageX + 10) + "px")
+    }
+
+    // hide tooltip when mouse leaves a bin
+    var hideTooltip = function() {
+        tooltip
+            .style("visibility", "hidden")
+        d3.selectAll('path')
+            .style('opacity', 1)
+        d3.select(this)
+            .style("stroke", 'none')
+            .style("opacity", 1)
+    }
+
+    var radius = Math.min(widthPie, heightPie) / 2
     
     var color = d3.scaleOrdinal()
-        .range(d3.schemeSet2);
+        .range(d3.schemeTableau10);
         
-    var pie = d3.pie()
+    pie = d3.pie()
         .value(function(d) { return d.chapterOccurrences; })(entryChapterData);
 
     var arc = d3.arc()
         .outerRadius(radius - 10)
         .innerRadius(0);
+
+    d3.select('svg')
+        .style('display', 'block')
     
-    var labelArc = d3.arc()
-        .outerRadius(radius - 40)
-        .innerRadius(radius - 40);
+    d3.selectAll('g.arc')
+        .remove()
 
-    var svg = d3.select(".main")
-        .append("svg")
-            .attr("width", width)
-            .attr("height", height)
-        .append("g")
-            .attr("transform", "translate(" + width/2 + "," + height/2 +")")
-
-    var g = svg.selectAll("arc")
+    var g = svgPie.selectAll("arc")
         .data(pie)
-        .enter().append("g")
-        .attr("class", "arc");
+        .enter()
+        .append("g")
+            .attr("class", "arc");
     
     g.append("path")
         .attr("d", arc)
-        .style("fill", function(d) { return color(d.data.chapterTitle);});
+        .style("fill", function(d) { return color(d.data.chapterTitle);})
+        .on("mouseover", showTooltip)
+        .on("mousemove", moveTooltip)
+        .on("mouseout", hideTooltip)
 }
 
 function showYearHistogram() {
@@ -174,8 +220,12 @@ function showYearHistogram() {
         yearStep = yearStep + yearRange
     }
 
+    // create color scale
+    var color = d3.scaleLinear()
+        .range(d3.schemeTableau10)
+
     // create svg object
-    const histo_svg = d3.select('.main')
+    const svgHisto = d3.select('.main')
         .append('svg')
             .attr("width", width)
             .attr('height', height)
@@ -256,12 +306,12 @@ function showYearHistogram() {
         .domain([0, binsMaxHeight]);
 
     // add x axis
-    histo_svg.append("g")
+    svgHisto.append("g")
         .attr("transform", `translate(0, ${chartHeight})`)
         .call(d3.axisBottom(x));
     
     // add y axis
-    histo_svg.append("g")
+    svgHisto.append("g")
         .attr("transform", `translate(${margin.left}, 0)`)
         .call(d3.axisLeft(y));
     
@@ -270,7 +320,7 @@ function showYearHistogram() {
     yearThreshold.pop()
 
     // add threshold lines
-    histo_svg.append('g')
+    svgHisto.append('g')
         .selectAll('line')
         .data(yearThreshold)
         .join('line')
@@ -279,8 +329,8 @@ function showYearHistogram() {
             .style('stroke-dasharray', 10)
             .attr("x1", d => x(d))
             .attr("x2", d => x(d))
-            .attr("y1", chartHeight + margin.top)
-            .attr("y2", margin.bottom);
+            .attr("y1", chartHeight)
+            .attr("y2", margin.bottom + margin.top);
 
     // create info bubble to display info when overing mouse on bins
     var tooltip = d3.select("body")
@@ -341,7 +391,7 @@ function showYearHistogram() {
     
     // bars to histrogram
     for (let i = 0; i < binsList.length; i++) {
-        histo_svg.append('g')
+        svgHisto.append('g')
             .selectAll('rect' + i.toString())
             .data(binsList[i])
             .join('rect')
@@ -363,7 +413,7 @@ function showYearHistogram() {
                         return chartHeight - y(d.size)
                     }
                 })
-                .attr('fill', colorArray[i])
+                .attr('fill', d3.schemeTableau10[i])
                 .on("mouseover", showTooltip)
                 .on("mousemove", moveTooltip)
                 .on("mouseout", hideTooltip)
@@ -372,6 +422,7 @@ function showYearHistogram() {
 
 function showCategoryBarChart() {
     // get the data for each etymology category
+    console.log(lexiconData)
     var etymologyCategoryData = []
     etymologyCategoryLabels.forEach(category => {
         totalCategory = d3.sum(lexiconData, function(d) {return +d[category.category_key]})
@@ -385,10 +436,9 @@ function showCategoryBarChart() {
     var duration = 800
     var delay = 200
     var yMax = d3.max(etymologyCategoryData, function(d) {return +d.total})
-    console.log(yMax)
 
     // create svg object
-    const bar_chart_svg = d3.select('.main')
+    const svgBarChart = d3.select('.main')
         .append('svg')
             .attr('width', width)
             .attr('height', height)
@@ -407,12 +457,12 @@ function showCategoryBarChart() {
         .round(true)
     
     // create color scale
-    const bar_color = d3.scaleSequential()
-        .domain([0, yMax])
-        .interpolator(d3.interpolateBlues)
+    const bar_color = d3.scaleOrdinal()
+        //.domain([0, yMax])
+        .range(d3.schemeTableau10)
 
     // add the bar rectangles to the svg element
-    bar_chart_svg.append('g')
+    svgBarChart.append('g')
         .selectAll('rect')
         .data(etymologyCategoryData)
         .enter()
@@ -421,20 +471,20 @@ function showCategoryBarChart() {
             .attr('width', x.bandwidth())
             .attr('y', y(0))
             .attr('x', d => x(d.label))
-            .style('fill', d=> bar_color(d.total))
+            .style('fill', d=> bar_color(d.label))
 
     // add x axis
-    bar_chart_svg.append('g')
+    svgBarChart.append('g')
         .attr("transform", `translate(0, ${chartHeight})`)
         .call(d3.axisBottom(x))
 
     // add y axis
-    bar_chart_svg.append('g')
+    svgBarChart.append('g')
         .attr('transform', `translate(${margin.left}, 0)`)
         .call(d3.axisLeft(y))
 
     // animation of bars
-    bar_chart_svg.selectAll('rect')
+    svgBarChart.selectAll('rect')
         .transition()
         .duration(duration)
         .attr("y", function(d) {return y(d.total);})
@@ -442,14 +492,14 @@ function showCategoryBarChart() {
         .delay((d,i) => {return(i*delay)})
 
     // add titles
-    bar_chart_svg.append('g')
+    svgBarChart.append('g')
         .attr('text-anchor', 'middle')
         .attr('transform', `translate(${x.bandwidth() / 2}, 10)`)
         .selectAll('text')
         .data(etymologyCategoryData)
         .enter()
         .append('text')
-            .style('fill', d => d3.lab(bar_color(d.total)).l < 60 ? 'white' : 'black')
+            .style('fill', d => d3.lab(bar_color(d.label)).l < 66 ? 'white' : 'black')
             .attr('fill-opacity', 0)
             .attr('y', d => y(d.total))
             .attr('x', d => x(d.label))
@@ -462,20 +512,21 @@ function showCategoryBarChart() {
 }
 
 function displaySearchResult() {
-    searchValue = document.getElementById("searchWord").value
+    console.log('in display')
+    var searchValue = document.getElementById("searchWord").value
     // if a non-empty string has been submitted
     if (searchValue) {
+        var existingResult = true
         // make the DIV where the search result appears visible
         var x = document.getElementById("searchResult")
         if (x.style.display === 'none') {
             x.style.display = 'inline-block'
+            existingResult = false
         }
         // search the string in the lexicon
         lexiconEntry = searchWordInLexicon(searchValue)
         // if the string exists in lexicon
         if (lexiconEntry != undefined) {
-            console.log('value found in lexicon')
-            console.log(lexiconEntry)
             // get the data from lexicon entry
             entryData = getEntryData(lexiconEntry)
             // display the search result
@@ -485,9 +536,11 @@ function displaySearchResult() {
                 "Etymology: " + entryData.wordEtymology + '</br>' +
                 "Appears in: " + entryData.wordChapters + '</br>' +
                 "MED entry: <a href=" + entryData.medLink + " target='_blank'>" + entryData.medWord + "</a>";
+            showChapterPie()
         } else {
             // display a message when searched word is not in the lexicon
             document.getElementById("searchResult").innerHTML = "Please enter a word used in Auchinleck Manuscript"
+            d3.select('.svg-pie').style('display', 'none')
         }
     } else {
         // hide the DIV where the search result appears
@@ -495,6 +548,7 @@ function displaySearchResult() {
         if (x.style.display === 'inline-block') {
             x.style.display = 'none'
         }
+        d3.select('.svg-pie').style('display', 'none')
     }
 }
 
@@ -618,16 +672,17 @@ function autocomplete(input, array) {
                 /* if active item in list of suggestions, simulate a click on the "active" item:*/
                 if (x) x[currentFocus].click();
             } else {
-                /* simulate a click on the search button*/
+                // simulate a click on the search button
                 document.getElementById("searchButton").click();
             }
-        }
+        }/*
         if (e.keyCode == 13) {
-            /* if the ENTER key is pressed, prevent the form from being submitted*/
+            // if the ENTER key is pressed, prevent the form from being submitted 
             e.preventDefault()
-            /* simulate a click on the search button*/
+            console.log('click')
+            // simulate a click on the search button
             document.getElementById("searchButton").click();
-        }
+        }*/
     });
     function addActive(x) {
         /*a function to classify an item as "active":*/
@@ -682,4 +737,3 @@ function start() {
 }
 
 setup()
-autocomplete(document.getElementById("searchWord"), words);
