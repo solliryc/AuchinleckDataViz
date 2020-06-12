@@ -16,8 +16,8 @@ const etymologyCategoryLabels = [
 ]
 
 // initialize variables with value
-var height = 300;
-var width = 600;
+var height = 400;
+var width = 900;
 var margin = ({top: 20, right: 20, bottom: 20, left: 40})
 
 function setup () {
@@ -57,103 +57,321 @@ function onDataLoaded(data) {
     lexiconData.forEach(entry => {
         words.push(entry.lexicon_word)
     });
-    console.log(frenchEtymologies)
-    displayHistogram()
-    //displayBarChart()
-
+    showChapterHistogram()
+    //showYearHistogram()
+    //showCategoryBarChart()
 }
 
-function displayHistogram() {
-    var chart_height = height - margin.bottom
-    var chart_width = width - margin.right
+function showChapterHistogram() {
+    var chartHeight = height - margin.bottom
+    var chartWidth = width - margin.right
+    var widthPie = 450
+    var heightPie = 450
+    var marginPie = 40
+    var entryData = lexiconData.filter(function(d) {return d.lexicon_word == 'faders'})
 
+    console.log(entryData)
+    console.log(chapterTitleData)
+
+    var entryChapterData = []
+    chapterTitleData.forEach(chapterData => {
+        chapterAbbrev = chapterData.chapter_abbrev
+        chapterTitle = chapterData.chapter_title
+        chapterOccurrences = chapterAbbrev + '_occurrences'
+        entryObject = {}
+
+        entryData.forEach(entry => {
+            if (entry[chapterOccurrences] != 0) {
+                console.log(chapterOccurrences)
+                entryObject['chapterAbbrev'] = chapterAbbrev
+                entryObject['chapterTitle'] = chapterTitle
+                entryObject['chapterOccurrences'] = entry[chapterOccurrences]
+            }
+        })
+        if (entryObject['chapterTitle']) {
+            entryChapterData.push(entryObject)
+        }
+    })
+    console.log(entryChapterData)
+    var yMax = d3.max(entryChapterData, function(d) {return +d.chapterOccurrences})
+
+    var arcs = d3.pie()(entryChapterData.map(function(d) {return d.chapterOccurrences}))
+    console.log(arcs[0])
+
+    var width = 300
+	var height = 300
+	// Think back to 5th grade. Radius is 1/2 of the diameter. What is the limiting factor on the diameter? Width or height, whichever is smaller
+    var radius = Math.min(width, height) / 2
+    
+    var color = d3.scaleOrdinal()
+        .range(d3.schemeSet2);
+        
+    var pie = d3.pie()
+        .value(function(d) { return d.chapterOccurrences; })(entryChapterData);
+
+    var arc = d3.arc()
+        .outerRadius(radius - 10)
+        .innerRadius(0);
+    
+    var labelArc = d3.arc()
+        .outerRadius(radius - 40)
+        .innerRadius(radius - 40);
+
+    var svg = d3.select(".main")
+        .append("svg")
+            .attr("width", width)
+            .attr("height", height)
+        .append("g")
+            .attr("transform", "translate(" + width/2 + "," + height/2 +")")
+
+    var g = svg.selectAll("arc")
+        .data(pie)
+        .enter().append("g")
+        .attr("class", "arc");
+    
+    g.append("path")
+        .attr("d", arc)
+        .style("fill", function(d) { return color(d.data.chapterTitle);});
+}
+
+function showYearHistogram() {
+    // initialize variables
+    var chartHeight = height - margin.bottom
+    var chartWidth = width - margin.right
+    var colorArray = ['blue', 'red', 'green'];
+    var weightedBool = false
+    var occurrencesBool = false
+
+    //
+    lexiconData.forEach(entry => {
+        entry.year = (+entry.year_from_1 + +entry.year_to_1) / 2
+    })
     // to find min that is not 0: use of constant Infinity, since Math.min(Infinity, someNumber) always return someNumber
-    var min_year = d3.min(lexiconData, function(d) {return +d.year_from_1 || Infinity;})
-    var max_year = d3.max(lexiconData, function(d) {return +d.year_from_1})
-    var year_range = 20
-
-    console.log(min_year, max_year)
-    if (min_year % year_range != 0) {
-        console.log(min_year)
-        while (min_year % year_range != 0) {
-            min_year = min_year - 1
+    var minYear = d3.min(lexiconData, function(d) {return +d.year || Infinity;})
+    var maxYear = d3.max(lexiconData, function(d) {return +d.year})
+    var yearRange = 50
+    console.log(minYear, maxYear)
+    
+    // round down the mininmum year (if yearRange == 25 and minYear == 1090, rounding minYear to 1075)
+    if (minYear % yearRange != 0) {
+        while (minYear % yearRange != 0) {
+            minYear = minYear - 1
         }
     }
-    if (max_year % year_range != 0) {
-        console.log(max_year)
-        while (max_year % year_range != 0) {
-            max_year = max_year + 1
+
+    // round up the maximum year (if yearRange == 25 and maxYear == 1630, rounding maxYear to 1650)
+    if (maxYear % yearRange != 0) {
+        while (maxYear % yearRange != 0) {
+            maxYear = maxYear + 1
         }
     }
-    var year_threshold = []
-    var year_step = min_year
-    while (year_step <= max_year) {
-        year_threshold.push(year_step)
-        year_step = year_step + year_range
+
+    // create a list of threshold values for the creation of histogram bins
+    var yearThreshold = []
+    var yearStep = minYear
+    while (yearStep <= maxYear) {
+        yearThreshold.push(yearStep)
+        yearStep = yearStep + yearRange
     }
 
-    nbr_bins = (max_year - min_year) / year_range
-
-    console.log(min_year, max_year, nbr_bins)
-    console.log(year_threshold)
-
+    // create svg object
     const histo_svg = d3.select('.main')
         .append('svg')
             .attr("width", width)
             .attr('height', height)
-        //.append("g")
-        //    .attr("transform", `translate(${margin.left}, ${margin.top})`)
 
+    // create horizontal scale
     var x = d3.scaleLinear()
-        .domain([min_year, max_year])
-        .range([margin.left, chart_width]);
-    
-    histo_svg.append("g")
-        .attr("transform", `translate(0, ${chart_height})`)
-        .call(d3.axisBottom(x));
+        .domain([minYear, maxYear])
+        .range([margin.left, chartWidth]);
 
-      // set the parameters for the histogram
+    // set the parameters for the histogram
     var histogram = d3.histogram()
-        .value(function(d) {return +d.year_from_1})   // I need to give the vector of value
-        .domain(x.domain())  // then the domain of the graphic
-        .thresholds(year_threshold); // then the numbers of bins
+        .value(function(d) {return +d.year})
+        .domain(x.domain())
+        .thresholds(yearThreshold);
 
-    // And apply this function to data to get the bins.
+    // get the bins by fitting the lexiconData
     var bins = histogram(lexiconData);
-    console.log(bins.length)
+    var bins1 = histogram(lexiconData.filter(function(d) {return d.french_etymology == 1}))
+    var bins2 = histogram(lexiconData.filter(function(d) {return d.other_etymology == 1}))
+    var bins3 = histogram(lexiconData.filter(function(d) {return d.unknown_etymology == 1}))
 
-    // Y axis: scale and draw:
-    var y = d3.scaleLinear()
-        .range([chart_height, margin.top])
-        .domain([0, d3.max(bins, function(d) {return d.length})]);
+    var binsList = [bins1, bins2, bins3]
+    var binsCount = binsList.length
+
+    var binsMaxHeight = 0
+
+    if (weightedBool) {
+        // if values are weighted
+        for (let i = 0; i < binsList.length; i++) {
+            bins = binsList[i]
+            totalBinsLength = d3.sum(bins, function(d) {return +d.length})
+            var totalBinsOccurrences = 0
+            bins.forEach(bin => {
+                totalBinsOccurrences = totalBinsOccurrences + d3.sum(bin, function(d) {return +d.occurrences})
+            })
     
+            for (let j = 0; j < bins.length; j++) {
+                if (occurrencesBool) {
+                    binOccurrences = d3.sum(bins[j], function(d) {return +d.occurrences})
+                    binsHeight = binOccurrences / totalBinsOccurrences
+                } else {
+                    binLength = binsList[i][j].length
+                    binsHeight = binLength / totalBinsLength
+                }
+                binsList[i][j].weighted = binsHeight
+    
+                if (binsHeight > binsMaxHeight) {
+                    binsMaxHeight = binsHeight
+                }
+            }
+        }
+    } else {
+        // else if values are not weighted
+        var binsHeightList = []
+        binsList.forEach(bins => {
+            // for each set of bins in the list
+            bins.forEach(bin => {
+                // for each bin
+                if (occurrencesBool) {
+                    // if showing by number of occurrences (tokens), compute the sum of occurrences of the bin
+                    binSize = d3.sum(bin, function(d) {return +d.occurrences})
+                } else {
+                    // if showing by number of words (types), get the size value of the bin
+                    binSize = bin.length
+                }
+                // add the size value of the bin to a list, add size value to the bin Object
+                binsHeightList.push(binSize)
+                bin.size = binSize
+            })
+        })
+        // get the size of the biggest bin in all bins
+        binsMaxHeight = d3.max(binsHeightList)
+    }
+    
+    // create vertical scale
+    var y = d3.scaleLinear()
+        .range([chartHeight, margin.top])
+        .domain([0, binsMaxHeight]);
+
+    // add x axis
+    histo_svg.append("g")
+        .attr("transform", `translate(0, ${chartHeight})`)
+        .call(d3.axisBottom(x));
+    
+    // add y axis
     histo_svg.append("g")
         .attr("transform", `translate(${margin.left}, 0)`)
         .call(d3.axisLeft(y));
-
-    bin_width = d3.max(bins, function(d) {return x(d.x1) -x(d.x0) -1})
     
-    // append the bar rectangles to the svg element
-    histo_svg.selectAll("rect")
-        .data(bins)
-        .enter()
-        .append("rect")
-            .attr("x", 1)
-            .attr("transform", function(d) {return `translate(${x(d.x1)}, ${y(d.length)})`})
-            .attr("width", bin_width)
-            .attr("height", function(d) {return chart_height - y(d.length)})
-            .style("fill", "#69b3a2")
+    // remove first and last threshold, to hide first and last threshold line
+    yearThreshold.splice(0, 1)
+    yearThreshold.pop()
+
+    // add threshold lines
+    histo_svg.append('g')
+        .selectAll('line')
+        .data(yearThreshold)
+        .join('line')
+            .style("stroke", "grey")
+            .style('stroke-width', '2px')
+            .style('stroke-dasharray', 10)
+            .attr("x1", d => x(d))
+            .attr("x2", d => x(d))
+            .attr("y1", chartHeight + margin.top)
+            .attr("y2", margin.bottom);
+
+    // create info bubble to display info when overing mouse on bins
+    var tooltip = d3.select("body")
+        .append("div")
+            .attr("class", "tooltip")
+            .style("position", "absolute")
+            .style("z-index", '10')
+            .style("visibility", "hidden")
+            .style("opacity", 1)
+            .style("background-color", "black")
+            .style("color", "white")
+            .style("border-radius", "5px")
+            .style("padding", "10px")
+
+    // show tooltip when mouse is over a bin
+    var showTooltip = function(d) {
+        if (weightedBool) {
+            tooltipString = `Year range: ${d.x0} - ${d.x1}</br>Frequency: ${Math.round(d.weighted * 100)}%`
+        } else {
+            tooltipString = `Year range: ${d.x0} - ${d.x1}</br>Total: ${d.size}`
+        }
+        tooltip
+            .style('visibility', 'visible')
+            .html(tooltipString)
+        d3.selectAll('rect')
+            .style('opacity', 0.6)
+        d3.select(this)
+            .style("stroke", "black")
+            .style('stroke-width', '2px')
+            .style('stroke-opacity', 0)
+            .style("opacity", 1)
+            .style('z-index', '5')
+    }
+
+    // move tooltip when mouse moves over a bin
+    var moveTooltip = function() {
+        tooltip
+            .style("top", (event.pageY-10)+"px")
+            .style("left", (event.pageX + 10) + "px")
+    }
+
+    // hide tooltip when mouse leaves a bin
+    var hideTooltip = function() {
+        tooltip
+            .style("visibility", "hidden")
+        d3.selectAll('rect')
+            .style('opacity', 1)
+        d3.select(this)
+            .style("stroke", 'none')
+            .style("opacity", 1)
+    }
+
+    // set the bin width to avoid having a slim first and last bin 
+    // - binsCount: create a space of x pixels between each bin
+    // / binsCount: splits the horizontal space of one bin into number of variables (if 3 variables, it divides bin_width by 3 to fill 3 bins in the space of 1 )
+    bin_width = d3.max(bins, function(d) {return x(d.x1) -x(d.x0) - binsCount}) / binsCount
+    console.log(binsList)
+    
+    // bars to histrogram
+    for (let i = 0; i < binsList.length; i++) {
+        histo_svg.append('g')
+            .selectAll('rect' + i.toString())
+            .data(binsList[i])
+            .join('rect')
+                .attr('x', 1)
+                // bin_width * i: if there are 3 variables, i=2 so the bin is translate horizontally by 2 bin_width
+                // + i: if there are 3 variables, i=2, so it adds 2 pixel of horizontal space to keep 1 pixel space between each bin
+                .attr('transform', function(d) {
+                    if (weightedBool) {
+                        return `translate(${bin_width * i + x(d.x0) + i}, ${y(d.weighted)})`
+                    } else {
+                        return `translate(${bin_width * i + x(d.x0) + i}, ${y(d.size)})`
+                    }
+                })
+                .attr('width', bin_width)
+                .attr('height', function(d) {
+                    if (weightedBool) {
+                        return chartHeight - y(d.weighted)
+                    } else {
+                        return chartHeight - y(d.size)
+                    }
+                })
+                .attr('fill', colorArray[i])
+                .on("mouseover", showTooltip)
+                .on("mousemove", moveTooltip)
+                .on("mouseout", hideTooltip)
+    }
 }
 
-function displayBarChart() {
-    // create svg object
-    const bar_chart_svg = d3.select('.main')
-        .append('svg')
-            .attr('width', width)
-            .attr('height', height)
-
-    console.log(bar_chart_svg)
-
+function showCategoryBarChart() {
+    // get the data for each etymology category
     var etymologyCategoryData = []
     etymologyCategoryLabels.forEach(category => {
         totalCategory = d3.sum(lexiconData, function(d) {return +d[category.category_key]})
@@ -162,57 +380,65 @@ function displayBarChart() {
     console.log(etymologyCategoryData)
 
     // initialize chart variables
-    var chart_height = height - margin.bottom
-    var chart_width = width - margin.right
+    var chartHeight = height - margin.bottom
+    var chartWidth = width - margin.right
     var duration = 800
     var delay = 200
-    var y_max = d3.max(etymologyCategoryData, function(d) {return +d.total})
-    console.log(y_max)
+    var yMax = d3.max(etymologyCategoryData, function(d) {return +d.total})
+    console.log(yMax)
+
+    // create svg object
+    const bar_chart_svg = d3.select('.main')
+        .append('svg')
+            .attr('width', width)
+            .attr('height', height)
 
     // create vertical scale
     const y = d3.scaleLinear()
-        .domain([0, y_max])
-        .range([chart_height, margin.top])
+        .domain([0, yMax])
+        .range([chartHeight, margin.top])
         .interpolate(d3.interpolateRound)
 
     // create horizontal scale
     const x = d3.scaleBand()
         .domain(etymologyCategoryData.map(d => d.label))
-        .range([margin.left, chart_width])
+        .range([margin.left, chartWidth])
         .padding(0.1)
         .round(true)
     
     // create color scale
     const bar_color = d3.scaleSequential()
-        .domain([0, y_max])
+        .domain([0, yMax])
         .interpolator(d3.interpolateBlues)
 
-    // add bars to chart
+    // add the bar rectangles to the svg element
     bar_chart_svg.append('g')
         .selectAll('rect')
         .data(etymologyCategoryData)
         .enter()
         .append('rect')
-            .attr('height', chart_height - y(0))
+            .attr('height', chartHeight - y(0))
             .attr('width', x.bandwidth())
             .attr('y', y(0))
             .attr('x', d => x(d.label))
             .style('fill', d=> bar_color(d.total))
 
+    // add x axis
     bar_chart_svg.append('g')
-        .attr("transform", `translate(0, ${chart_height})`)
+        .attr("transform", `translate(0, ${chartHeight})`)
         .call(d3.axisBottom(x))
 
+    // add y axis
     bar_chart_svg.append('g')
         .attr('transform', `translate(${margin.left}, 0)`)
         .call(d3.axisLeft(y))
 
-    // Animation
+    // animation of bars
     bar_chart_svg.selectAll('rect')
         .transition()
         .duration(duration)
         .attr("y", function(d) {return y(d.total);})
-        .attr("height", function(d) {return chart_height - y(d.total);})
+        .attr("height", function(d) {return chartHeight - y(d.total);})
         .delay((d,i) => {return(i*delay)})
 
     // add titles
@@ -254,11 +480,11 @@ function displaySearchResult() {
             entryData = getEntryData(lexiconEntry)
             // display the search result
             document.getElementById("searchResult").innerHTML = 
-                "Word: " + entryData.lexiconWord + 
-                "</br> Year range: " + entryData.yearRange +
-                "</br> Etymology: " + entryData.wordEtymology +
-                "</br> Appears in: " + entryData.wordChapters +
-                "</br> MED entry: <a href=" + entryData.medLink + " target='_blank'>" + entryData.medWord + "</a>";
+                "Word: " + entryData.lexiconWord + '</br>' + 
+                "Year range: " + entryData.yearRange + '</br>' +
+                "Etymology: " + entryData.wordEtymology + '</br>' +
+                "Appears in: " + entryData.wordChapters + '</br>' +
+                "MED entry: <a href=" + entryData.medLink + " target='_blank'>" + entryData.medWord + "</a>";
         } else {
             // display a message when searched word is not in the lexicon
             document.getElementById("searchResult").innerHTML = "Please enter a word used in Auchinleck Manuscript"
@@ -283,8 +509,8 @@ function searchWordInLexicon(searchWord) {
 
 function getEntryData(lexiconEntry) {
     // get the word form, year range, MED word, web link to the MED entry, and etymology of the lexicon entry
-    lexiconWord = lexiconEntry.lexicon_word
-    yearRange = lexiconEntry.year_from_1 + "-" + entry.year_to_1
+    lexiconWord = '<span id="resultWord">' + lexiconEntry.lexicon_word + '</span>'
+    yearRange = '<span id="resultYearFrom">' + lexiconEntry.year_from_1 + '</span>' + " - " + '<span id="resultYearTo">' + entry.year_to_1 + '</span>'
     medWord = lexiconEntry.med_word
     medLink = "https://quod.lib.umich.edu/m/middle-english-dictionary/dictionary/MED" + lexiconEntry.med_id
     wordEtymology = "Unknown etymology"
@@ -294,9 +520,9 @@ function getEntryData(lexiconEntry) {
         langName = etymology.language_name
         if (lexiconEntry[langAbbrev] == 1) {
             if (wordEtymology == "Unknown etymology") {
-                wordEtymology = langName
+                wordEtymology = '<span id="' + langAbbrev + '">' + langName + '</span>'
             } else {
-                wordEtymology = wordEtymology + " - " + langName
+                wordEtymology = wordEtymology + " - " + '<span id="' + langAbbrev + '">' + langName + '</span>'
             }
         }
     })

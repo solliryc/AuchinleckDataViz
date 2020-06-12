@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Réseau climatique - valeurs mensuelles</title>
+    <link rel="stylesheet" href="styles/normalize.css">
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+    <h1>Réseau suisse de mesures climatiques</h1>
+    
+    <div class="mat">
+        <h2>Températures moyennes mensuelles en <span class="current-year">2018</span></h2>
+        <div>
+            <label for="stations">Station</label>
+            <select id="stations">
+                <option>Choisir...</option>
+                <option value="ALT">Altdorf</option>
+            </select>
+        </div>
+        <div>
+            <label for="year">Année</label>
+            <small>1864</small>
+            <input type="range" id="year" name="year" min="1864" max="2018" step="1" value="2018">
+            <small>2018</small>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Sources: <a href="https://opendata.swiss/fr/dataset/klimamessnetz-monatswerte">opendata.swiss</a> <a href="https://www.meteosuisse.admin.ch/home/systemes-de-mesure-et-de-prevision/stations-au-sol/reseau-suisse-de-mesures-climatiques.html">MétéoSuisse</a></p>
+    </div>
+    
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="scripts/main.js"></script>
+</body>
+</html>
