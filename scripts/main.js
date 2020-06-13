@@ -1,20 +1,35 @@
-// initialize variables
-var widthPie = 300
-var heightPie = 300
+// initialize constant variables with value
+const height = 400;
+const width = 900;
+const margin = ({top: 20, right: 20, bottom: 20, left: 40})
+const widthPie = 300
+const heightPie = 300
+
+// initialize booleans
+var weightedBool = false
+var occurrencesBool = false
 
 var lexiconData = [];
 var etymologyData = [];
 var chapterTitleData = [];
 var frenchEtymologies = [];
 var words = [];
-var svgPie = d3.select(".main")
+
+// create svg object for pie chart
+const svgPie = d3.select("#chapterPie")
     .append("svg")
-        .attr('class', 'svg-pie')
+        .attr('id', 'svgPie')
         .style('display', 'none')
         .attr("width", widthPie)
         .attr("height", heightPie)
         .append("g")
             .attr("transform", `translate(${widthPie/2}, ${heightPie/2})`)
+
+// create svg object for year histogram
+const svgHisto = d3.select('#yearHistogram')
+.append('svg')
+    .attr("width", width)
+    .attr('height', height)
 
 // initialize constant variables
 const frenchAbbrevList = ['AF', 'AN', 'CF', 'F', 'MF', 'MnF', 'NF', 'OF', 'ONF', 'OProv.', 'Prov.']
@@ -26,14 +41,10 @@ const etymologyCategoryLabels = [
     {category_key:'unknown_etymology', category_name: 'Unknown etymology'}
 ]
 
-// initialize variables with value
-var height = 400;
-var width = 900;
-var margin = ({top: 20, right: 20, bottom: 20, left: 40})
-
 function setup () {
 	// Charger les données (Attention: opération asynchrone !)
-	loadData();
+    loadData();
+    
 }
 
 function loadData() {
@@ -72,10 +83,36 @@ function onDataLoaded(data) {
     autocomplete(document.getElementById("searchWord"), words);    
     showYearHistogram()
     showCategoryBarChart()
+
+    updateYearHistogram()
 }
 
-d3.select('#searchButton')
-        .on('click', function() {console.log('sdfasf')})
+function updateYearHistogram() {
+    // update histogram when changing if showing weighted values
+    d3.select('#weight')
+        .on('change', function() {
+            var checkbox = document.getElementById('weight')
+            if (checkbox.checked == true) {
+                weightedBool = true
+            } else {
+                weightedBool = false
+            }
+            showYearHistogram()
+        })
+    
+    // update histogram when changing if showing words or occurrences
+    d3.selectAll('[name="words-occurrences"]')
+        .on('change', function() {
+            var wordsCheck = document.getElementById('radio-words')
+            
+            if (wordsCheck.checked) {
+                occurrencesBool = false
+            } else {
+                occurrencesBool = true
+            }
+            showYearHistogram()
+        })
+}
 
 function showChapterPie() {
     var resultWord = document.getElementById('resultWord').innerHTML
@@ -148,6 +185,12 @@ function showChapterPie() {
             .style("opacity", 1)
     }
 
+    d3.select('#svgPie')
+        .style('display', 'block')
+    
+    d3.selectAll('g.arc')
+        .remove()
+
     var radius = Math.min(widthPie, heightPie) / 2
     
     var color = d3.scaleOrdinal()
@@ -159,12 +202,6 @@ function showChapterPie() {
     var arc = d3.arc()
         .outerRadius(radius - 10)
         .innerRadius(0);
-
-    d3.select('svg')
-        .style('display', 'block')
-    
-    d3.selectAll('g.arc')
-        .remove()
 
     var g = svgPie.selectAll("arc")
         .data(pie)
@@ -185,10 +222,13 @@ function showYearHistogram() {
     var chartHeight = height - margin.bottom
     var chartWidth = width - margin.right
     var colorArray = ['blue', 'red', 'green'];
-    var weightedBool = false
-    var occurrencesBool = false
+    var etymologyList = [
+        {abbrev: 'french_etymology', category: 'French-based words'},
+        {abbrev: 'latin_etymology', category: 'Latin-based words'},
+        {abbrev: 'other_etymology', category: 'Other etymology'},
+    ]
+    var binsList = []
 
-    //
     lexiconData.forEach(entry => {
         entry.year = (+entry.year_from_1 + +entry.year_to_1) / 2
     })
@@ -220,15 +260,12 @@ function showYearHistogram() {
         yearStep = yearStep + yearRange
     }
 
+    d3.selectAll('#yearHistogram > svg > g')
+        .remove()
+
     // create color scale
     var color = d3.scaleLinear()
         .range(d3.schemeTableau10)
-
-    // create svg object
-    const svgHisto = d3.select('.main')
-        .append('svg')
-            .attr("width", width)
-            .attr('height', height)
 
     // create horizontal scale
     var x = d3.scaleLinear()
@@ -242,12 +279,16 @@ function showYearHistogram() {
         .thresholds(yearThreshold);
 
     // get the bins by fitting the lexiconData
-    var bins = histogram(lexiconData);
-    var bins1 = histogram(lexiconData.filter(function(d) {return d.french_etymology == 1}))
-    var bins2 = histogram(lexiconData.filter(function(d) {return d.other_etymology == 1}))
-    var bins3 = histogram(lexiconData.filter(function(d) {return d.unknown_etymology == 1}))
+    //var bins = histogram(lexiconData);
+    etymologyList.forEach(etymology => {
+        var bins = histogram(lexiconData.filter(function(d) {return d[etymology.abbrev] == 1}))
+        binsList.push(bins)
+    })
+    //var bins1 = histogram(lexiconData.filter(function(d) {return d.french_etymology == 1}))
+    //var bins2 = histogram(lexiconData.filter(function(d) {return d.other_etymology == 1}))
+    //var bins3 = histogram(lexiconData.filter(function(d) {return d.unknown_etymology == 1}))
 
-    var binsList = [bins1, bins2, bins3]
+    //var binsList = [bins1, bins2, bins3]
     var binsCount = binsList.length
 
     var binsMaxHeight = 0
@@ -255,7 +296,7 @@ function showYearHistogram() {
     if (weightedBool) {
         // if values are weighted
         for (let i = 0; i < binsList.length; i++) {
-            bins = binsList[i]
+            var bins = binsList[i]
             totalBinsLength = d3.sum(bins, function(d) {return +d.length})
             var totalBinsOccurrences = 0
             bins.forEach(bin => {
@@ -325,8 +366,9 @@ function showYearHistogram() {
         .data(yearThreshold)
         .join('line')
             .style("stroke", "grey")
-            .style('stroke-width', '2px')
+            .style('stroke-width', '1px')
             .style('stroke-dasharray', 10)
+            .style("opacity", 0.4)
             .attr("x1", d => x(d))
             .attr("x2", d => x(d))
             .attr("y1", chartHeight)
@@ -355,7 +397,7 @@ function showYearHistogram() {
         tooltip
             .style('visibility', 'visible')
             .html(tooltipString)
-        d3.selectAll('rect')
+        d3.selectAll('.rectHisto')
             .style('opacity', 0.6)
         d3.select(this)
             .style("stroke", "black")
@@ -376,7 +418,7 @@ function showYearHistogram() {
     var hideTooltip = function() {
         tooltip
             .style("visibility", "hidden")
-        d3.selectAll('rect')
+        d3.selectAll('.rectHisto')
             .style('opacity', 1)
         d3.select(this)
             .style("stroke", 'none')
@@ -386,7 +428,7 @@ function showYearHistogram() {
     // set the bin width to avoid having a slim first and last bin 
     // - binsCount: create a space of x pixels between each bin
     // / binsCount: splits the horizontal space of one bin into number of variables (if 3 variables, it divides bin_width by 3 to fill 3 bins in the space of 1 )
-    bin_width = d3.max(bins, function(d) {return x(d.x1) -x(d.x0) - binsCount}) / binsCount
+    bin_width = d3.max(binsList[0], function(d) {return x(d.x1) -x(d.x0) - binsCount}) / binsCount
     console.log(binsList)
     
     // bars to histrogram
@@ -395,6 +437,7 @@ function showYearHistogram() {
             .selectAll('rect' + i.toString())
             .data(binsList[i])
             .join('rect')
+                .attr('class', 'rectHisto')
                 .attr('x', 1)
                 // bin_width * i: if there are 3 variables, i=2 so the bin is translate horizontally by 2 bin_width
                 // + i: if there are 3 variables, i=2, so it adds 2 pixel of horizontal space to keep 1 pixel space between each bin
@@ -417,6 +460,25 @@ function showYearHistogram() {
                 .on("mouseover", showTooltip)
                 .on("mousemove", moveTooltip)
                 .on("mouseout", hideTooltip)
+        
+        var legend = svgHisto.selectAll(".legend")
+            .data(binsList[i])
+            .enter()
+            .append("g")
+    
+        legend.append("rect")
+            .attr("fill", d3.schemeTableau10[i])
+            .attr("width", 20)
+            .attr("height", 20)
+            .attr("y", i * 30)
+            .attr("x", chartWidth - 200);
+    
+        legend.append("text")
+            .attr("class", "label")
+            .attr("y", 16 + i * 30)
+            .attr("x", chartWidth - 170)
+            .attr("text-anchor", "start")
+            .text(etymologyList[i].category);
     }
 }
 
@@ -467,6 +529,7 @@ function showCategoryBarChart() {
         .data(etymologyCategoryData)
         .enter()
         .append('rect')
+            .attr('class', 'rectBarChart')
             .attr('height', chartHeight - y(0))
             .attr('width', x.bandwidth())
             .attr('y', y(0))
