@@ -13,6 +13,7 @@ const marginLolli = {top: 10, right: 30, bottom: 40, left: 50}
 // initialize booleans
 var weightedBool = false
 var occurrencesBool = false
+var occurrencesBarChartBool = false
 
 var lexiconData = [];
 var etymologyData = [];
@@ -175,7 +176,7 @@ function populateEtymologyOptionsListHisto() {
 function populateEtymologyOptionsListBar() {
     // initialize etymology options selection
     var select = tail.select("#selectEtymologyBar", {
-        multiLimit: 4, 
+        multiLimit: 10, 
         multiShowLimit: true,
         placeholder: 'Select the etymologies',
         search: true,
@@ -290,13 +291,13 @@ function optionsYearHistogram() {
                 var selectedOption = {abbrev: abbrev, name: option.text}
                 etymologySelectedOptionsHisto.push(selectedOption)
             })
-
+            /*
             // if no option is selected, 
             if (etymologySelectedOptionsHisto.length < 1) {
                 etymologySelectedOptionsHisto = [
                     {abbrev: 'all', name: 'All etymologies'},
                 ]
-            }
+            }*/
             showYearHistogram()
         })
 }
@@ -318,7 +319,7 @@ function optionsCategoryBarChart() {
             showCategoryBarChart()
         })
 
-    // update histogram when selecting the etymologies
+    // update bar chart when selecting the etymologies
     d3.select('#selectEtymologyBar')
         .on('change', function() {
             etymologySelectedOptionsBar = []
@@ -331,12 +332,26 @@ function optionsCategoryBarChart() {
                 var selectedOption = {abbrev: abbrev, name: name}
                 etymologySelectedOptionsBar.push(selectedOption)
             })
-
+            /*
             // if no option is selected, 
             if (etymologySelectedOptionsBar.length < 1) {
-                etymologySelectedOptionsBar = [
-                    {abbrev: 'all', name: 'All etymologies'},
-                ]
+                //populateEtymologyOptionsListBar()
+                console.log('nooooooooooooooo')
+                etymologySelectedOptionsBar = etymologyCategoryLabels
+            }
+            */
+            showCategoryBarChart()
+        })
+    
+    // update histogram when changing the option of showing words or occurrences
+    d3.selectAll('[name="words-occurrences-bar"]')
+        .on('change', function() {
+            var wordsCheck = document.getElementById('radio-words-bar')
+            
+            if (wordsCheck.checked) {
+                occurrencesBarChartBool = false
+            } else {
+                occurrencesBarChartBool = true
             }
             showCategoryBarChart()
         })
@@ -809,7 +824,9 @@ function showYearHistogram() {
     // set the bin width to avoid having a slim first and last bin 
     // - binsCount: create a space of x pixels between each bin
     // / binsCount: splits the horizontal space of one bin into number of variables (if 3 variables, it divides bin_width by 3 to fill 3 bins in the space of 1 )
-    bin_width = d3.max(binsList[0], function(d) {return x(d.x1) -x(d.x0) - binsCount}) / binsCount
+    if (etymologySelectedOptionsHisto.length > 0) {
+        var bin_width = d3.max(binsList[0], function(d) {return x(d.x1) -x(d.x0) - binsCount}) / binsCount
+    }
     
     // bars to histrogram
     for (let i = 0; i < binsList.length; i++) {
@@ -840,6 +857,7 @@ function showYearHistogram() {
                 .on("mouseover", showTooltip)
                 .on("mousemove", moveTooltip)
                 .on("mouseout", hideTooltip)
+                
         
         var legend = svgHisto.selectAll(".legend")
             .data(binsList[i])
@@ -860,41 +878,95 @@ function showYearHistogram() {
             .attr("text-anchor", "start")
             .text(etymologyList[i].name);
     }
+
+    if (etymologySelectedOptionsHisto.length < 1) {
+        d3.selectAll('.tooltip')
+            .remove()
+        
+        d3.selectAll('.rectHisto')
+            .on("mouseover", function(d) {
+                d3.selectAll('.rectHisto')
+                    .style('opacity', 1)
+            })
+
+        svgHisto.append('filter')
+            .attr('id', 'blur')
+            .append('feGaussianBlur')
+                .attr('in', 'SourceGraphic')
+                .attr('stdDeviation', 3)
+        
+        svgHisto.selectAll('g')
+            .attr('filter', 'url(#blur)')
+        
+        svgHisto.append('g')
+            .append('text')
+            .attr('x', width/2)
+            .attr('y', height/2)
+            .text('Please select at least one etymology')
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'middle')
+    }
 }
 
 function showCategoryBarChart() {
     var chapterList = chapterSelectedOptions
     var etymologyList = etymologySelectedOptionsBar
 
-    const filteredData = lexiconData.filter((d) => {
+    const categoryData = lexiconData.filter((d) => {
         return chapterList.some((f) => {
             return d[f['chapter_abbrev']] == 1;
         });
     });
 
     // get the data for each etymology category
-    var etymologyCategoryData = []
+    var etymologyBarChartData = []
     etymologyList.forEach(etymology => {
         abbrev = etymology.abbrev
         name = etymology.name
 
-        if (abbrev == 'all') {
-            var totalEtymology = filteredData.length
+        if (occurrencesBarChartBool) {
+            if (abbrev == 'all') {
+                var count = d3.sum(categoryData, function(d) {return +d.occurrences})
+            } else {
+                var filteredData = categoryData.filter(function(d) {return d[abbrev] == 1})
+                var count = d3.sum(filteredData, function(d) {return +d['occurrences']})
+            }
         } else {
-            var totalEtymology = d3.sum(filteredData, function(d) {return +d[abbrev]})
+            if (abbrev == 'all') {
+                var count = categoryData.length
+            } else {
+                var count = d3.sum(categoryData, function(d) {return +d[abbrev]})
+            }
         }
-        etymologyCategoryData.push({
-            count: totalEtymology, 
+        etymologyBarChartData.push({
+            count: count,
             label: name,
         })
     })
+
+    function compare(a, b) {
+        const countA = a.count
+        const countB = b.count
+      
+        let comparison = 0;
+        if (countA > countB) {
+          comparison = 1;
+        } else if (countA < countB) {
+          comparison = -1;
+        }
+        return comparison * -1;
+    }
+
+    console.log(etymologyBarChartData)
+    etymologyBarChartData.sort(compare)
+    console.log(etymologyBarChartData)
 
     // initialize chart variables
     var chartHeight = height - margin.bottom
     var chartWidth = width - margin.right
     var duration = 800
     var delay = 200
-    var yMax = d3.max(etymologyCategoryData, function(d) {return +d.count})
+    var yMax = d3.max(etymologyBarChartData, function(d) {return +d.count})
 
     d3.selectAll('#categoryBarChart > svg > g')
         .remove()
@@ -907,7 +979,7 @@ function showCategoryBarChart() {
 
     // create horizontal scale
     const x = d3.scaleBand()
-        .domain(etymologyCategoryData.map(d => d.label))
+        .domain(etymologyBarChartData.map(d => d.label))
         .range([margin.left, chartWidth])
         .padding(0.1)
         .round(true)
@@ -920,10 +992,10 @@ function showCategoryBarChart() {
     // add the bar rectangles to the svg element
     svgBarChart.append('g')
         .selectAll('rect')
-        .data(etymologyCategoryData)
+        .data(etymologyBarChartData)
         .enter()
         .append('rect')
-            .attr('class', 'rectBarChart')
+            .attr('class', 'rectBar')
             .attr('height', chartHeight - y(0))
             .attr('width', x.bandwidth())
             .attr('y', y(0))
@@ -939,38 +1011,42 @@ function showCategoryBarChart() {
     svgBarChart.append('g')
         .attr('transform', `translate(${margin.left}, 0)`)
         .call(d3.axisLeft(y))
-
     
     // animation of bars
-    svgBarChart.selectAll('rect')
+    svgBarChart.selectAll('.rectBar')
         .transition()
         .duration(duration)
         .attr("y", function(d) {return y(d.count);})
         .attr("height", function(d) {return chartHeight - y(d.count);})
         .delay((d,i) => {return(i*delay)})
 
-    if (chapterSelectedOptions.length > 0) {
-        // add titles
-        svgBarChart.append('g')
+    // add titles
+    svgBarChart.append('g')
         .attr('text-anchor', 'middle')
         .attr('transform', `translate(${x.bandwidth() / 2}, 10)`)
         .selectAll('text')
-        .data(etymologyCategoryData)
+        .data(etymologyBarChartData)
         .enter()
         .append('text')
-            .style('fill', d => d3.lab(bar_color(d.label)).l < 66 ? 'white' : 'black')
+            .attr('class', 'textBar')
+            .style('fill', 'black')
             .attr('fill-opacity', 0)
             .attr('y', d => y(d.count))
             .attr('x', d => x(d.label))
-            .attr('dy', '0.35em')
+            .attr('dy', '-0.9em')
             .text(d => d.count)
             .transition()
                 .duration(duration)
                 .delay((d,i) => {return(i*delay + duration)})
                 .attr('fill-opacity', 1)
-    }
 
-    if (chapterSelectedOptions.length < 1) {
+    if (chapterSelectedOptions.length < 1 || etymologySelectedOptionsBar.length < 1) {
+        svgBarChart.selectAll('.textBar')
+            .remove()
+
+        svgBarChart.selectAll('.rectBar')
+            .remove()
+        
         svgBarChart.append('filter')
             .attr('id', 'blur')
             .append('feGaussianBlur')
@@ -984,7 +1060,7 @@ function showCategoryBarChart() {
             .append('text')
             .attr('x', width/2)
             .attr('y', height/2)
-            .text('Please select at least one chapter')
+            .text('Please select at least one chapter and one etymology')
             .attr('text-anchor', 'middle')
             .attr('dominant-baseline', 'middle')
     }
