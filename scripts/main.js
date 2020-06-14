@@ -72,9 +72,9 @@ function loadData() {
 	// Une fois les données chargées, la promise sera résolue (.then) et
     // le callback `onDataLoaded` sera appelé en passant les données en paramètre
     Promise.all([
-        d3.csv('./data/med_merge_lexicon_chapters_final_v2.csv'),
-        d3.csv('./data/med_etymologies.csv'),
-        d3.csv('./data/chapters_title.csv'),
+        d3.csv('data/med_merge_lexicon_chapters_final_v2.csv'),
+        d3.csv('data/med_etymologies.csv'),
+        d3.csv('data/chapters_title.csv'),
     ]).then(function(files){
         onDataLoaded(files)
     })
