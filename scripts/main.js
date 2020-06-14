@@ -57,9 +57,15 @@ const etymologyCategoryLabels = [
     {abbrev:'unknown_etymology', name: 'Unknown etymology'}
 ]
 
-var etymologySelectedOptions = [
+const defaultEtymologySelectedOptions = [
     {abbrev: 'all', name: 'All etymologies'},
 ]
+var etymologySelectedOptions = defaultEtymologySelectedOptions
+
+const defaultChapterSelectedOptions = [
+    {chapter_abbrev: 'arthur', chapter_title: "Of Arthour & of Merlin"}
+]
+var chapterSelectedOptions = defaultChapterSelectedOptions
 
 function setup () {
 	// Charger les données (Attention: opération asynchrone !)
@@ -100,13 +106,19 @@ function onDataLoaded(data) {
     lexiconData.forEach(entry => {
         words.push(entry.lexicon_word)
     });
+
+    chapterSelectedOptions = chapterTitleData
     
     populateEtymologyOptionsList()
     populateChapterOptionList()
+
     autocomplete(document.getElementById("searchWord"), words);
+
     showYearHistogram()
-    showCategoryBarChart()
     optionsYearHistogram()
+
+    showCategoryBarChart()
+    
     showWordsLollipop()
     d3.select('#svgLolli').style('display', 'none')
 }
@@ -125,7 +137,7 @@ function populateEtymologyOptionsList() {
     // populate etymology options selection with the list of etymologies
     etymologyOptions = {}
     for (let i = 0; i < etymologyData.length; i++) {
-        etymology = etymologyData[i]
+        const etymology = etymologyData[i]
         abbrev = etymology.language_abbrev
         
         // if there is no word of that etymology, do not put it in the list of options
@@ -163,6 +175,27 @@ function populateChapterOptionList() {
         search: true,
         sortItems: 'ASC',
     } );
+
+    chapterOptions = {}
+    for (let i = 0; i < chapterTitleData.length; i++) {
+        const chapter = chapterTitleData[i];
+        abbrev = chapter.chapter_abbrev
+        title = chapter.chapter_title
+
+        defaultChapterSelectedOptions.forEach(defaultOption => {
+            defaultAbbrev = defaultOption.chapter_abbrev
+            
+            // set the default selected chapter
+            if (defaultAbbrev == abbrev) {
+                chapterOptions[abbrev] = {value: title, selected: true}
+            } else {
+                chapterOptions[abbrev] = {value: title, selected: true}
+            }
+        })
+    }
+
+    // add the etymologies as options
+    select.options.add(chapterOptions)
 }
 
 function optionsYearHistogram() {
@@ -193,7 +226,7 @@ function optionsYearHistogram() {
         })
     
     // update histogram when selecting the etymologies
-    d3.select('.select')
+    d3.select('#selectEtymology')
         .on('change', function() {
             etymologySelectedOptions = []
             var options = Array.from(this.selectedOptions)
@@ -209,6 +242,31 @@ function optionsYearHistogram() {
                     {abbrev: 'all', name: 'All etymologies'},
                 ]
             }
+            showYearHistogram()
+        })
+    
+    d3.select('#selectChapter')
+        .on('change', function(d) {
+            chapterSelectedOptions = []
+            var options = Array.from(this.selectedOptions)
+
+            options.forEach(option => {
+                var selectedOption = {chapter_abbrev: option.value, chapter_title: option.text}
+                chapterSelectedOptions.push(selectedOption)
+            })
+
+            // if no option is selected, 
+            if (chapterSelectedOptions.length < 1) {
+                chapterSelectedOptions = [
+                    {chapter_abbrev: 'arthur', chapter_title: 'Of Arthour & of Merlin'},
+                ]
+                tail.select('#selectChapter', {
+                    items: {
+                        arthur: {value: 'Of Arthour & of Merlin', selected: true}
+                    }
+                })
+            }
+
             showYearHistogram()
         })
 }
@@ -463,23 +521,21 @@ function showYearHistogram() {
     var chartWidth = width - margin.right
     var etymologyList = etymologySelectedOptions
     var binsList = []
-    var chapterList = [
-        {chapter_abbrev: "arthur", chapter_title: "Of Arthour & of Merlin"}
-    ]
-    var histoData = []
+    var chapterList = chapterSelectedOptions
 
-    chapterList.forEach(chapter => {
-    })
+    const histogramData = lexiconData.filter((d) => {
+        return chapterList.some((f) => {
+            return d[f['chapter_abbrev']] == 1;
+        });
+    });
 
-    filteredData = lexiconData.filter(function(d) {return d[[chapterList]] == 1})
-    console.log(filteredData)
     //
-    lexiconData.forEach(entry => {
+    histogramData.forEach(entry => {
         entry.year = (+entry.year_from_1 + +entry.year_to_1) / 2
     })
     // to find min that is not 0: use of constant Infinity, since Math.min(Infinity, someNumber) always return someNumber
-    var minYear = d3.min(lexiconData, function(d) {return +d.year || Infinity;})
-    var maxYear = d3.max(lexiconData, function(d) {return +d.year})
+    var minYear = d3.min(histogramData, function(d) {return +d.year || Infinity;})
+    var maxYear = d3.max(histogramData, function(d) {return +d.year})
     var yearRange = 50
     console.log(minYear, maxYear)
     
@@ -526,9 +582,9 @@ function showYearHistogram() {
     // get the bins by fitting the lexiconData
     etymologyList.forEach(etymology => {
         if (etymology.abbrev == 'all') {
-            var bins = histogram(lexiconData)
+            var bins = histogram(histogramData)
         } else {
-            var bins = histogram(lexiconData.filter(function(d) {return d[etymology.abbrev] == 1}))
+            var bins = histogram(histogramData.filter(function(d) {return d[etymology.abbrev] == 1}))
         }
         // add for each bin its etymology
         bins.forEach(bin => {bin.etymology = etymology.name})
