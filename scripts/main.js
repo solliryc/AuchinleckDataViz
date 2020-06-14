@@ -47,6 +47,13 @@ const svgHisto = d3.select('#yearHistogram')
         .attr("width", width)
         .attr('height', height)
 
+// create svg object
+const svgBarChart = d3.select('#categoryBarChart')
+.append('svg')
+    .attr('id', 'svgBarChart')
+    .attr('width', width)
+    .attr('height', height)
+
 // initialize constant variables
 const frenchAbbrevList = ['AF', 'AN', 'CF', 'F', 'MF', 'MnF', 'NF', 'OF', 'ONF', 'OProv.', 'Prov.']
 const latinAbbrevList = ['AL', 'CL', 'L', 'Latinate', 'LL', 'ML', 'VL', 'MnL (16th cent.)', 'pseudo-Latin']
@@ -60,7 +67,8 @@ const etymologyCategoryLabels = [
 const defaultEtymologySelectedOptions = [
     {abbrev: 'all', name: 'All etymologies'},
 ]
-var etymologySelectedOptions = defaultEtymologySelectedOptions
+var etymologySelectedOptionsHisto = defaultEtymologySelectedOptions
+var etymologySelectedOptionsBar = etymologyCategoryLabels
 
 const defaultChapterSelectedOptions = [
     {chapter_abbrev: 'arthur', chapter_title: "Of Arthour & of Merlin"}
@@ -94,14 +102,6 @@ function onDataLoaded(data) {
     etymologyData = data[1]
     chapterTitleData = data[2]
 
-    etymologyData.forEach(etymology => {
-        abbrev = etymology.language_abbrev
-        name = etymology.language_name
-        if (frenchAbbrevList.includes(abbrev)) {
-            frenchEtymologies.push({'language_abbrev': abbrev, 'language_name': name})
-        }
-    });
-
     // create words list for 
     lexiconData.forEach(entry => {
         words.push(entry.lexicon_word)
@@ -109,7 +109,8 @@ function onDataLoaded(data) {
 
     chapterSelectedOptions = chapterTitleData
     
-    populateEtymologyOptionsList()
+    populateEtymologyOptionsListHisto()
+    populateEtymologyOptionsListBar()
     populateChapterOptionList()
 
     autocomplete(document.getElementById("searchWord"), words);
@@ -118,14 +119,15 @@ function onDataLoaded(data) {
     optionsYearHistogram()
 
     showCategoryBarChart()
+    optionsCategoryBarChart()
     
     showWordsLollipop()
     d3.select('#svgLolli').style('display', 'none')
 }
 
-function populateEtymologyOptionsList() {
+function populateEtymologyOptionsListHisto() {
     // initialize etymology options selection
-    var select = tail.select("#selectEtymology", {
+    var select = tail.select("#selectEtymologyHisto", {
         multiLimit: 4, 
         multiShowLimit: true,
         placeholder: 'Select the etymologies',
@@ -139,6 +141,7 @@ function populateEtymologyOptionsList() {
     for (let i = 0; i < etymologyData.length; i++) {
         const etymology = etymologyData[i]
         abbrev = etymology.language_abbrev
+        name = etymology.language_name
         
         // if there is no word of that etymology, do not put it in the list of options
         etymologySize = lexiconData.filter(function(d) {return d[abbrev] == 1}).length
@@ -153,7 +156,7 @@ function populateEtymologyOptionsList() {
         } else {
             group ='Other'
         }
-        etymologyOptions[abbrev] = {value: etymology.language_name, group: group}
+        etymologyOptions[abbrev] = {value: name, group: group}
     }
 
     // add to the options the etymology categories
@@ -164,8 +167,56 @@ function populateEtymologyOptionsList() {
     // set the default selected etymology
     etymologyOptions['all'] = {value: 'All etymologies', selected: true}
 
-    // add the etymologies as options
+    // add the etymologies as options for all etymology select fields
     select.options.add(etymologyOptions)
+    
+}
+
+function populateEtymologyOptionsListBar() {
+    // initialize etymology options selection
+    var select = tail.select("#selectEtymologyBar", {
+        multiLimit: 4, 
+        multiShowLimit: true,
+        placeholder: 'Select the etymologies',
+        search: true,
+        sortGroups: 'ASC', 
+        sortItems: 'ASC',
+    } );
+
+    // populate etymology options selection with the list of etymologies
+    etymologyOptions = {}
+    for (let i = 0; i < etymologyData.length; i++) {
+        const etymology = etymologyData[i]
+        abbrev = etymology.language_abbrev
+        name = etymology.language_name
+        
+        // if there is no word of that etymology, do not put it in the list of options
+        etymologySize = lexiconData.filter(function(d) {return d[abbrev] == 1}).length
+        if (etymologySize < 1) {
+            continue;   
+        }
+
+        if (frenchAbbrevList.includes(abbrev)) {
+            group = 'French-based'
+        } else if (latinAbbrevList.includes(abbrev)) {
+            group = 'Latin-based'
+        } else {
+            group ='Other'
+        }
+        etymologyOptions[abbrev] = {value: name, group: group}
+    }
+
+    // add to the options the etymology categories
+    etymologyCategoryLabels.forEach(category => {
+        etymologyOptions[category.abbrev] = {value: category.name, selected: true}
+    })
+
+    // set the default selected etymology
+    etymologyOptions['all'] = {value: 'All etymologies'}
+
+    // add the etymologies as options for all etymology select fields
+    select.options.add(etymologyOptions)
+    
 }
 
 function populateChapterOptionList() {
@@ -174,6 +225,7 @@ function populateChapterOptionList() {
         placeholder: 'Select the chapters',
         search: true,
         sortItems: 'ASC',
+        multiSelectAll: true,
     } );
 
     chapterOptions = {}
@@ -183,7 +235,7 @@ function populateChapterOptionList() {
         title = chapter.chapter_title
 
         defaultChapterSelectedOptions.forEach(defaultOption => {
-            defaultAbbrev = defaultOption.chapter_abbrev
+            defaultAbbrev = defaultOption.abbrev
             
             // set the default selected chapter
             if (defaultAbbrev == abbrev) {
@@ -226,48 +278,67 @@ function optionsYearHistogram() {
         })
     
     // update histogram when selecting the etymologies
-    d3.select('#selectEtymology')
+    d3.select('#selectEtymologyHisto')
         .on('change', function() {
-            etymologySelectedOptions = []
+            etymologySelectedOptionsHisto = []
             var options = Array.from(this.selectedOptions)
 
             options.forEach(option => {
-                var selectedOption = {abbrev: option.value, name: option.text}
-                etymologySelectedOptions.push(selectedOption)
+                abbrev = option.value
+                name = option.text
+
+                var selectedOption = {abbrev: abbrev, name: option.text}
+                etymologySelectedOptionsHisto.push(selectedOption)
             })
 
             // if no option is selected, 
-            if (etymologySelectedOptions.length < 1) {
-                etymologySelectedOptions = [
+            if (etymologySelectedOptionsHisto.length < 1) {
+                etymologySelectedOptionsHisto = [
                     {abbrev: 'all', name: 'All etymologies'},
                 ]
             }
             showYearHistogram()
         })
-    
+}
+
+function optionsCategoryBarChart() {
     d3.select('#selectChapter')
         .on('change', function(d) {
             chapterSelectedOptions = []
             var options = Array.from(this.selectedOptions)
 
             options.forEach(option => {
-                var selectedOption = {chapter_abbrev: option.value, chapter_title: option.text}
+                abbrev = option.value
+                title = option.text
+
+                var selectedOption = {chapter_abbrev: abbrev, chapter_title: title}
                 chapterSelectedOptions.push(selectedOption)
             })
 
-            // if no option is selected, 
-            if (chapterSelectedOptions.length < 1) {
-                chapterSelectedOptions = [
-                    {chapter_abbrev: 'arthur', chapter_title: 'Of Arthour & of Merlin'},
-                ]
-                tail.select('#selectChapter', {
-                    items: {
-                        arthur: {value: 'Of Arthour & of Merlin', selected: true}
-                    }
-                })
-            }
+            showCategoryBarChart()
+        })
 
-            showYearHistogram()
+    // update histogram when selecting the etymologies
+    d3.select('#selectEtymologyBar')
+        .on('change', function() {
+            etymologySelectedOptionsBar = []
+            var options = Array.from(this.selectedOptions)
+
+            options.forEach(option => {
+                abbrev = option.value
+                name = option.text
+
+                var selectedOption = {abbrev: abbrev, name: name}
+                etymologySelectedOptionsBar.push(selectedOption)
+            })
+
+            // if no option is selected, 
+            if (etymologySelectedOptionsBar.length < 1) {
+                etymologySelectedOptionsBar = [
+                    {abbrev: 'all', name: 'All etymologies'},
+                ]
+            }
+            showCategoryBarChart()
         })
 }
 
@@ -519,9 +590,9 @@ function showYearHistogram() {
     // initialize variables
     var chartHeight = height - margin.bottom
     var chartWidth = width - margin.right
-    var etymologyList = etymologySelectedOptions
+    var etymologyList = etymologySelectedOptionsHisto
     var binsList = []
-    var chapterList = chapterSelectedOptions
+    var chapterList = chapterTitleData
 
     const histogramData = lexiconData.filter((d) => {
         return chapterList.some((f) => {
@@ -792,25 +863,41 @@ function showYearHistogram() {
 }
 
 function showCategoryBarChart() {
+    var chapterList = chapterSelectedOptions
+    var etymologyList = etymologySelectedOptionsBar
+
+    const filteredData = lexiconData.filter((d) => {
+        return chapterList.some((f) => {
+            return d[f['chapter_abbrev']] == 1;
+        });
+    });
+
     // get the data for each etymology category
     var etymologyCategoryData = []
-    etymologyCategoryLabels.forEach(category => {
-        totalCategory = d3.sum(lexiconData, function(d) {return +d[category.abbrev]})
-        etymologyCategoryData.push({total: totalCategory, label: category.name})
-    });
+    etymologyList.forEach(etymology => {
+        abbrev = etymology.abbrev
+        name = etymology.name
+
+        if (abbrev == 'all') {
+            var totalEtymology = filteredData.length
+        } else {
+            var totalEtymology = d3.sum(filteredData, function(d) {return +d[abbrev]})
+        }
+        etymologyCategoryData.push({
+            count: totalEtymology, 
+            label: name,
+        })
+    })
 
     // initialize chart variables
     var chartHeight = height - margin.bottom
     var chartWidth = width - margin.right
     var duration = 800
     var delay = 200
-    var yMax = d3.max(etymologyCategoryData, function(d) {return +d.total})
+    var yMax = d3.max(etymologyCategoryData, function(d) {return +d.count})
 
-    // create svg object
-    const svgBarChart = d3.select('.main')
-        .append('svg')
-            .attr('width', width)
-            .attr('height', height)
+    d3.selectAll('#categoryBarChart > svg > g')
+        .remove()
 
     // create vertical scale
     const y = d3.scaleLinear()
@@ -853,16 +940,18 @@ function showCategoryBarChart() {
         .attr('transform', `translate(${margin.left}, 0)`)
         .call(d3.axisLeft(y))
 
+    
     // animation of bars
     svgBarChart.selectAll('rect')
         .transition()
         .duration(duration)
-        .attr("y", function(d) {return y(d.total);})
-        .attr("height", function(d) {return chartHeight - y(d.total);})
+        .attr("y", function(d) {return y(d.count);})
+        .attr("height", function(d) {return chartHeight - y(d.count);})
         .delay((d,i) => {return(i*delay)})
 
-    // add titles
-    svgBarChart.append('g')
+    if (chapterSelectedOptions.length > 0) {
+        // add titles
+        svgBarChart.append('g')
         .attr('text-anchor', 'middle')
         .attr('transform', `translate(${x.bandwidth() / 2}, 10)`)
         .selectAll('text')
@@ -871,14 +960,34 @@ function showCategoryBarChart() {
         .append('text')
             .style('fill', d => d3.lab(bar_color(d.label)).l < 66 ? 'white' : 'black')
             .attr('fill-opacity', 0)
-            .attr('y', d => y(d.total))
+            .attr('y', d => y(d.count))
             .attr('x', d => x(d.label))
             .attr('dy', '0.35em')
-            .text(d => d.total)
+            .text(d => d.count)
             .transition()
                 .duration(duration)
                 .delay((d,i) => {return(i*delay + duration)})
                 .attr('fill-opacity', 1)
+    }
+
+    if (chapterSelectedOptions.length < 1) {
+        svgBarChart.append('filter')
+            .attr('id', 'blur')
+            .append('feGaussianBlur')
+                .attr('in', 'SourceGraphic')
+                .attr('stdDeviation', 3)
+        
+        svgBarChart.selectAll('g')
+            .attr('filter', 'url(#blur)')
+        
+        svgBarChart.append('g')
+            .append('text')
+            .attr('x', width/2)
+            .attr('y', height/2)
+            .text('Please select at least one chapter')
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'middle')
+    }
 }
 
 function displaySearchResult() {
@@ -900,11 +1009,22 @@ function displaySearchResult() {
             entryData = getEntryData(lexiconEntry)
             // display the search result
             document.getElementById("searchResult").innerHTML = 
-                "Word: " + entryData.lexiconWord + '</br>' + 
-                "Year range: " + entryData.yearRange + '</br>' +
-                "Etymology: " + entryData.wordEtymology + '</br>' +
-                "Appears in: " + entryData.wordChapters + '</br>' +
-                "MED entry: <a href=" + entryData.medLink + " target='_blank'>" + entryData.medWord + "</a>";
+                "<table style='width: 100%'>" +
+                    "<tr>" +
+                        "<th>Word</th>" +
+                        "<th>Year range</th>" +
+                        "<th>Etymology</th>" +
+                        "<th>Appears in</th>" +
+                        "<th>MED entry</th>" +
+                    "</tr>" +
+                    "<tr>" +
+                        "<td>" + entryData.lexiconWord + "</td>" +
+                        "<td>" + entryData.yearRange + "</td>" +
+                        "<td>" + entryData.wordEtymology + "</td>" +
+                        "<td>" + entryData.wordChapters + "</td>" +
+                        "<td><a href=" + entryData.medLink + " target='_blank'>" + entryData.medWord + "</td>" +
+                    "</tr>" +
+                "</table>"
             showChapterPie()
         } else {
             // display a message when searched word is not in the lexicon

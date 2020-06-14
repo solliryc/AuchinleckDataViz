@@ -28,12 +28,17 @@
 
         <div id="searchResult" style="display: none;"></div>
         <div id="chapterPie"></div>
-        <div id="wordsLollipop"></div>
+        <div id="wordsLollipop">
+        </div>
         <div id="yearHistogram">
+            <h3>When did the words in the Manuscript appear in Middle English? </h3>
             <fieldset>
                 <legend>Choose the options:</legend>
                 <table style="width: 100%;">
                     <tr>
+                        <td>
+                            <select id="selectEtymologyHisto" class="selectEtymology" multiple></select>
+                        </td>
                         <td>
                             <input type="radio" name="count-frequency" id="radio-count" value="radio-count" checked>
                             <label for="radio-count">Count</label>
@@ -47,18 +52,26 @@
                             <label for="radio-occurrences">Occurrences</label>
                         </td>
                     </tr>
-                    <tr>
-                        <td>
-                            <select id="selectEtymology" class="select" multiple></select>
-                        </td>
-                        <td>
-                            <select id="selectChapter" class="select" multiple></select>
-                        </td>
-                    </tr>
                 </table>
                 <div>
                     
                 </div>
+            </fieldset>
+        </div>
+        <div id="categoryBarChart">
+            <h3>How many words are there by etymology?</h3>
+            <fieldset>
+                <legend>Choose the options:</legend>
+                <table style="width: 100%;">
+                    <tr>
+                        <td>
+                            <select id="selectChapter" class="select" multiple></select>
+                        </td>
+                        <td>
+                            <select id="selectEtymologyBar" class="selectEtymology" multiple></select>
+                        </td>
+                    </tr>
+                </table>
             </fieldset>
         </div>
     </div>
