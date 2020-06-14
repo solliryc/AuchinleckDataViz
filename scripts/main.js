@@ -1,9 +1,14 @@
 // initialize constant variables with value
 const height = 400;
 const width = 900;
-const margin = ({top: 20, right: 20, bottom: 20, left: 40})
+const margin = {top: 20, right: 20, bottom: 20, left: 40}
+
 const widthPie = 300
 const heightPie = 300
+
+const widthLolli = 500
+const heightLolli = 300
+const marginLolli = {top: 10, right: 30, bottom: 40, left: 50}
 
 // initialize booleans
 var weightedBool = false
@@ -14,6 +19,7 @@ var etymologyData = [];
 var chapterTitleData = [];
 var frenchEtymologies = [];
 var words = [];
+var stopWords = []
 
 // create svg object for pie chart
 const svgPie = d3.select("#chapterPie")
@@ -25,20 +31,34 @@ const svgPie = d3.select("#chapterPie")
         .append("g")
             .attr("transform", `translate(${widthPie/2}, ${heightPie/2})`)
 
+const svgLolli = d3.select('#wordsLollipop')
+    .append('svg')
+        .attr('id', 'svgLolli')
+        .style('display', 'none')
+        .attr('width', widthLolli)
+        .attr('height', heightLolli)
+        .append("g")
+            .attr("transform", `translate(${marginLolli.left}, ${marginLolli.top})`)
+
+
 // create svg object for year histogram
 const svgHisto = d3.select('#yearHistogram')
-.append('svg')
-    .attr("width", width)
-    .attr('height', height)
+    .append('svg')
+        .attr("width", width)
+        .attr('height', height)
 
 // initialize constant variables
 const frenchAbbrevList = ['AF', 'AN', 'CF', 'F', 'MF', 'MnF', 'NF', 'OF', 'ONF', 'OProv.', 'Prov.']
-const latinAbbrevList = []
+const latinAbbrevList = ['AL', 'CL', 'L', 'Latinate', 'LL', 'ML', 'VL', 'MnL (16th cent.)', 'pseudo-Latin']
 const etymologyCategoryLabels = [
-    {category_key:'french_etymology', category_name: 'French-based words'},
-    {category_key:'latin_etymology', category_name: 'Latin-based words'},
-    {category_key:'other_etymology', category_name: 'Other etymology'},
-    {category_key:'unknown_etymology', category_name: 'Unknown etymology'}
+    {abbrev:'french_etymology', name: 'French-based etymology'},
+    {abbrev:'latin_etymology', name: 'Latin-based etymology'},
+    {abbrev:'other_etymology', name: 'Other etymology'},
+    {abbrev:'unknown_etymology', name: 'Unknown etymology'}
+]
+
+var etymologySelectedOptions = [
+    {abbrev: 'all', name: 'All etymologies'},
 ]
 
 function setup () {
@@ -76,23 +96,82 @@ function onDataLoaded(data) {
         }
     });
 
+    // create words list for 
     lexiconData.forEach(entry => {
         words.push(entry.lexicon_word)
     });
-
-    autocomplete(document.getElementById("searchWord"), words);    
+    
+    populateEtymologyOptionsList()
+    populateChapterOptionList()
+    autocomplete(document.getElementById("searchWord"), words);
     showYearHistogram()
     showCategoryBarChart()
-
-    updateYearHistogram()
+    optionsYearHistogram()
+    showWordsLollipop()
+    d3.select('#svgLolli').style('display', 'none')
 }
 
-function updateYearHistogram() {
-    // update histogram when changing if showing weighted values
-    d3.select('#weight')
+function populateEtymologyOptionsList() {
+    // initialize etymology options selection
+    var select = tail.select("#selectEtymology", {
+        multiLimit: 4, 
+        multiShowLimit: true,
+        placeholder: 'Select the etymologies',
+        search: true,
+        sortGroups: 'ASC', 
+        sortItems: 'ASC',
+    } );
+
+    // populate etymology options selection with the list of etymologies
+    etymologyOptions = {}
+    for (let i = 0; i < etymologyData.length; i++) {
+        etymology = etymologyData[i]
+        abbrev = etymology.language_abbrev
+        
+        // if there is no word of that etymology, do not put it in the list of options
+        etymologySize = lexiconData.filter(function(d) {return d[abbrev] == 1}).length
+        if (etymologySize < 1) {
+            continue;   
+        }
+
+        if (frenchAbbrevList.includes(abbrev)) {
+            group = 'French-based'
+        } else if (latinAbbrevList.includes(abbrev)) {
+            group = 'Latin-based'
+        } else {
+            group ='Other'
+        }
+        etymologyOptions[abbrev] = {value: etymology.language_name, group: group}
+    }
+
+    // add to the options the etymology categories
+    etymologyCategoryLabels.forEach(category => {
+        etymologyOptions[category.abbrev] = {value: category.name}
+    })
+
+    // set the default selected etymology
+    etymologyOptions['all'] = {value: 'All etymologies', selected: true}
+
+    // add the etymologies as options
+    select.options.add(etymologyOptions)
+}
+
+function populateChapterOptionList() {
+    // initialize etymology options selection
+    var select = tail.select("#selectChapter", {
+        placeholder: 'Select the chapters',
+        search: true,
+        sortItems: 'ASC',
+    } );
+}
+
+function optionsYearHistogram() {
+    // update histogram when changing the option of showing count or frequency of values
+    d3.selectAll('[name="count-frequency"]')
         .on('change', function() {
-            var checkbox = document.getElementById('weight')
-            if (checkbox.checked == true) {
+            var frequencyCheck = document.getElementById('radio-frequency')
+
+            if (frequencyCheck.checked) {
                 weightedBool = true
             } else {
                 weightedBool = false
@@ -100,7 +179,7 @@ function updateYearHistogram() {
             showYearHistogram()
         })
     
-    // update histogram when changing if showing words or occurrences
+    // update histogram when changing the option of showing words or occurrences
     d3.selectAll('[name="words-occurrences"]')
         .on('change', function() {
             var wordsCheck = document.getElementById('radio-words')
@@ -112,9 +191,160 @@ function updateYearHistogram() {
             }
             showYearHistogram()
         })
+    
+    // update histogram when selecting the etymologies
+    d3.select('.select')
+        .on('change', function() {
+            etymologySelectedOptions = []
+            var options = Array.from(this.selectedOptions)
+
+            options.forEach(option => {
+                var selectedOption = {abbrev: option.value, name: option.text}
+                etymologySelectedOptions.push(selectedOption)
+            })
+
+            // if no option is selected, 
+            if (etymologySelectedOptions.length < 1) {
+                etymologySelectedOptions = [
+                    {abbrev: 'all', name: 'All etymologies'},
+                ]
+            }
+            showYearHistogram()
+        })
+}
+
+function showWordsLollipop(chapterAbbrev, color) {
+    chapterOccurrences = chapterAbbrev + '_occurrences'
+    stopWords = getStopWords()
+    var chapterName
+
+    chapterTitleData.forEach(chapter => {
+        if (chapter['chapter_abbrev'] == chapterAbbrev) {
+            chapterName = chapter['chapter_title']
+        }
+    })
+
+    filteredData = lexiconData.filter(function(d) {return d[chapterOccurrences] > 0})
+    filteredData = filteredData.filter(function(d) {return (!stopWords.includes(d.lexicon_word))})
+    
+    mappedData = filteredData.map(entry => ({
+        word: entry.lexicon_word,
+        occurrences: entry[chapterOccurrences],
+        nbr_texts: entry.nbr_texts,
+    }))
+
+    mappedData.sort(function(a, b) {
+        return b.occurrences - a.occurrences
+    })
+    
+    topWordsData = mappedData.slice(0, 10)
+
+    var chartHeight = heightLolli - marginLolli.bottom - marginLolli.top
+    var chartWidth = widthLolli - marginLolli.right - marginLolli.left
+    var xMax = d3.max(topWordsData, function(d) {return +d.occurrences})
+
+    // create info bubble to display info when overing mouse on bins
+    var tooltip = d3.select("body")
+        .append("div")
+            .attr("class", "tooltip")
+            .style("position", "absolute")
+            .style("z-index", '10')
+            .style("visibility", "hidden")
+            .style("opacity", 1)
+            .style("background-color", "black")
+            .style("color", "white")
+            .style("border-radius", "5px")
+            .style("padding", "10px")
+
+    // show tooltip when mouse is over a bin
+    var showTooltip = function(d) {
+        tooltipString = `Word: ${d.word}</br>${d.occurrences} occurrences</br>in <i>${chapterName}</i>`
+        tooltip
+            .style('visibility', 'visible')
+            .html(tooltipString)
+        d3.selectAll('circle.contentLolli')
+            .style('opacity', 0.6)
+        d3.select(this)
+            .style("opacity", 1)
+            .style('z-index', '5')
+    }
+
+    // move tooltip when mouse moves over a bin
+    var moveTooltip = function() {
+        tooltip
+            .style("top", (event.pageY-10)+"px")
+            .style("left", (event.pageX + 10) + "px")
+    }
+
+    // hide tooltip when mouse leaves a bin
+    var hideTooltip = function() {
+        tooltip
+            .style("visibility", "hidden")
+        d3.selectAll('circle.contentLolli')
+            .style('opacity', 1)
+        d3.select(this)
+            .style("opacity", 1)
+    }
+
+    // make the svg visible
+    d3.select('#svgLolli')
+        .style('display', 'inline-block')
+
+    d3.selectAll('.contentLolli')
+        .remove()
+
+    // Add X axis
+    var x = d3.scaleLinear()
+        .domain([0, xMax])
+        .range([0, chartWidth]);
+
+    // Y axis
+    var y = d3.scaleBand()
+        .range([0, chartHeight])
+        .domain(topWordsData.map(function(d) { return d.word; }))
+        .padding(1);
+
+    svgLolli.append("g")
+        .attr('class', 'contentLolli')
+        .attr("transform", `translate(0, ${chartHeight})`)
+        .call(d3.axisBottom(x))
+    
+    svgLolli.append("g")
+        .attr('class', 'contentLolli')
+        .call(d3.axisLeft(y))
+
+    // Lines
+    svgLolli.append('g')
+        .selectAll("myline")
+        .data(topWordsData)
+        .enter()
+        .append("line")
+            .attr('class', 'contentLolli')
+            .attr("x1", function(d) { return x(d.occurrences); })
+            .attr("x2", x(0))
+            .attr("y1", function(d) { return y(d.word); })
+            .attr("y2", function(d) { return y(d.word); })
+            .attr("stroke", "grey")
+
+    // Circles
+    svgLolli.append('g')
+        .selectAll("mycircle")
+        .data(topWordsData)
+        .enter()
+        .append("circle")
+            .attr('class', 'contentLolli')
+            .attr("cx", function(d) { return x(d.occurrences); })
+            .attr("cy", function(d) { return y(d.word); })
+            .attr("r", "4")
+            .style("fill", color)
+            .attr("stroke", "black")
+            .on("mouseover", showTooltip)
+            .on("mousemove", moveTooltip)
+            .on("mouseout", hideTooltip)
 }
 
 function showChapterPie() {
+    d3.select('#svgLolli').style('display', 'none')
     var resultWord = document.getElementById('resultWord').innerHTML
     var entryData = lexiconData.filter(function(d) {return d.lexicon_word == resultWord})
 
@@ -136,7 +366,6 @@ function showChapterPie() {
             entryChapterData.push(entryObject)
         }
     })
-    console.log('chapter', entryChapterData)
 
     // create info bubble to display info when overing mouse on bins
     var tooltip = d3.select("body")
@@ -185,9 +414,11 @@ function showChapterPie() {
             .style("opacity", 1)
     }
 
+    // make the svg visible
     d3.select('#svgPie')
-        .style('display', 'block')
+        .style('display', 'inline-block')
     
+    // remove previous drawn pie sections
     d3.selectAll('g.arc')
         .remove()
 
@@ -210,25 +441,39 @@ function showChapterPie() {
             .attr("class", "arc");
     
     g.append("path")
+        .attr('id', function(d) {return d.data.chapterAbbrev})
         .attr("d", arc)
         .style("fill", function(d) { return color(d.data.chapterTitle);})
         .on("mouseover", showTooltip)
         .on("mousemove", moveTooltip)
         .on("mouseout", hideTooltip)
+
+    d3.selectAll('path')
+        .on('click', function(d) {
+            clicked = d3.select(this)
+            chapterClicked = clicked.attr('id')
+            colorClicked = clicked.style('fill')
+            showWordsLollipop(chapterClicked, colorClicked)
+        })
 }
 
 function showYearHistogram() {
     // initialize variables
     var chartHeight = height - margin.bottom
     var chartWidth = width - margin.right
-    var colorArray = ['blue', 'red', 'green'];
-    var etymologyList = [
-        {abbrev: 'french_etymology', category: 'French-based words'},
-        {abbrev: 'latin_etymology', category: 'Latin-based words'},
-        {abbrev: 'other_etymology', category: 'Other etymology'},
-    ]
+    var etymologyList = etymologySelectedOptions
     var binsList = []
+    var chapterList = [
+        {chapter_abbrev: "arthur", chapter_title: "Of Arthour & of Merlin"}
+    ]
+    var histoData = []
 
+    chapterList.forEach(chapter => {
+    })
+
+    filteredData = lexiconData.filter(function(d) {return d[[chapterList]] == 1})
+    console.log(filteredData)
+    //
     lexiconData.forEach(entry => {
         entry.year = (+entry.year_from_1 + +entry.year_to_1) / 2
     })
@@ -279,22 +524,24 @@ function showYearHistogram() {
         .thresholds(yearThreshold);
 
     // get the bins by fitting the lexiconData
-    //var bins = histogram(lexiconData);
     etymologyList.forEach(etymology => {
-        var bins = histogram(lexiconData.filter(function(d) {return d[etymology.abbrev] == 1}))
+        if (etymology.abbrev == 'all') {
+            var bins = histogram(lexiconData)
+        } else {
+            var bins = histogram(lexiconData.filter(function(d) {return d[etymology.abbrev] == 1}))
+        }
+        // add for each bin its etymology
+        bins.forEach(bin => {bin.etymology = etymology.name})
+
         binsList.push(bins)
     })
-    //var bins1 = histogram(lexiconData.filter(function(d) {return d.french_etymology == 1}))
-    //var bins2 = histogram(lexiconData.filter(function(d) {return d.other_etymology == 1}))
-    //var bins3 = histogram(lexiconData.filter(function(d) {return d.unknown_etymology == 1}))
 
-    //var binsList = [bins1, bins2, bins3]
     var binsCount = binsList.length
-
     var binsMaxHeight = 0
 
+    // if values are weighted
     if (weightedBool) {
-        // if values are weighted
+        // for each set of bins in the list
         for (let i = 0; i < binsList.length; i++) {
             var bins = binsList[i]
             totalBinsLength = d3.sum(bins, function(d) {return +d.length})
@@ -302,39 +549,46 @@ function showYearHistogram() {
             bins.forEach(bin => {
                 totalBinsOccurrences = totalBinsOccurrences + d3.sum(bin, function(d) {return +d.occurrences})
             })
-    
+            
+            // for each bin
             for (let j = 0; j < bins.length; j++) {
+                // if showing by number of occurrences (tokens)
                 if (occurrencesBool) {
+                    // compute the sum of occurrences of the bin, compute the weighted height of the bin
                     binOccurrences = d3.sum(bins[j], function(d) {return +d.occurrences})
                     binsHeight = binOccurrences / totalBinsOccurrences
+                // if showing by number of words (types)
                 } else {
+                    // get the size value of the bin, compute the weighted height of the bin
                     binLength = binsList[i][j].length
                     binsHeight = binLength / totalBinsLength
                 }
-                binsList[i][j].weighted = binsHeight
+                binsList[i][j].frequency = binsHeight
     
                 if (binsHeight > binsMaxHeight) {
                     binsMaxHeight = binsHeight
                 }
             }
         }
+    // else if values are not weighted
     } else {
-        // else if values are not weighted
         var binsHeightList = []
+        // for each set of bins in the list
         binsList.forEach(bins => {
-            // for each set of bins in the list
+            // for each bin
             bins.forEach(bin => {
-                // for each bin
+                // if showing by number of occurrences (tokens)
                 if (occurrencesBool) {
-                    // if showing by number of occurrences (tokens), compute the sum of occurrences of the bin
+                    // compute the sum of occurrences of the bin
                     binSize = d3.sum(bin, function(d) {return +d.occurrences})
+                // if showing by number of words (types)
                 } else {
-                    // if showing by number of words (types), get the size value of the bin
+                    // get the size value of the bin
                     binSize = bin.length
                 }
                 // add the size value of the bin to a list, add size value to the bin Object
                 binsHeightList.push(binSize)
-                bin.size = binSize
+                bin.count = binSize
             })
         })
         // get the size of the biggest bin in all bins
@@ -390,9 +644,9 @@ function showYearHistogram() {
     // show tooltip when mouse is over a bin
     var showTooltip = function(d) {
         if (weightedBool) {
-            tooltipString = `Year range: ${d.x0} - ${d.x1}</br>Frequency: ${Math.round(d.weighted * 100)}%`
+            tooltipString = `${d.etymology}</br>Year range: ${d.x0} - ${d.x1}</br>Frequency: ${Math.round(d.frequency * 100)}%`
         } else {
-            tooltipString = `Year range: ${d.x0} - ${d.x1}</br>Total: ${d.size}`
+            tooltipString = `${d.etymology}</br>Year range: ${d.x0} - ${d.x1}</br>Count: ${d.count}`
         }
         tooltip
             .style('visibility', 'visible')
@@ -429,7 +683,6 @@ function showYearHistogram() {
     // - binsCount: create a space of x pixels between each bin
     // / binsCount: splits the horizontal space of one bin into number of variables (if 3 variables, it divides bin_width by 3 to fill 3 bins in the space of 1 )
     bin_width = d3.max(binsList[0], function(d) {return x(d.x1) -x(d.x0) - binsCount}) / binsCount
-    console.log(binsList)
     
     // bars to histrogram
     for (let i = 0; i < binsList.length; i++) {
@@ -443,17 +696,17 @@ function showYearHistogram() {
                 // + i: if there are 3 variables, i=2, so it adds 2 pixel of horizontal space to keep 1 pixel space between each bin
                 .attr('transform', function(d) {
                     if (weightedBool) {
-                        return `translate(${bin_width * i + x(d.x0) + i}, ${y(d.weighted)})`
+                        return `translate(${bin_width * i + x(d.x0) + i}, ${y(d.frequency)})`
                     } else {
-                        return `translate(${bin_width * i + x(d.x0) + i}, ${y(d.size)})`
+                        return `translate(${bin_width * i + x(d.x0) + i}, ${y(d.count)})`
                     }
                 })
                 .attr('width', bin_width)
                 .attr('height', function(d) {
                     if (weightedBool) {
-                        return chartHeight - y(d.weighted)
+                        return chartHeight - y(d.frequency)
                     } else {
-                        return chartHeight - y(d.size)
+                        return chartHeight - y(d.count)
                     }
                 })
                 .attr('fill', d3.schemeTableau10[i])
@@ -478,19 +731,17 @@ function showYearHistogram() {
             .attr("y", 16 + i * 30)
             .attr("x", chartWidth - 170)
             .attr("text-anchor", "start")
-            .text(etymologyList[i].category);
+            .text(etymologyList[i].name);
     }
 }
 
 function showCategoryBarChart() {
     // get the data for each etymology category
-    console.log(lexiconData)
     var etymologyCategoryData = []
     etymologyCategoryLabels.forEach(category => {
-        totalCategory = d3.sum(lexiconData, function(d) {return +d[category.category_key]})
-        etymologyCategoryData.push({total: totalCategory, label: category.category_name})
+        totalCategory = d3.sum(lexiconData, function(d) {return +d[category.abbrev]})
+        etymologyCategoryData.push({total: totalCategory, label: category.name})
     });
-    console.log(etymologyCategoryData)
 
     // initialize chart variables
     var chartHeight = height - margin.bottom
@@ -575,7 +826,6 @@ function showCategoryBarChart() {
 }
 
 function displaySearchResult() {
-    console.log('in display')
     var searchValue = document.getElementById("searchWord").value
     // if a non-empty string has been submitted
     if (searchValue) {
@@ -583,7 +833,7 @@ function displaySearchResult() {
         // make the DIV where the search result appears visible
         var x = document.getElementById("searchResult")
         if (x.style.display === 'none') {
-            x.style.display = 'inline-block'
+            x.style.display = 'block'
             existingResult = false
         }
         // search the string in the lexicon
@@ -603,15 +853,17 @@ function displaySearchResult() {
         } else {
             // display a message when searched word is not in the lexicon
             document.getElementById("searchResult").innerHTML = "Please enter a word used in Auchinleck Manuscript"
-            d3.select('.svg-pie').style('display', 'none')
+            d3.select('#svgPie').style('display', 'none')
+            d3.select('#svgLolli').style('display', 'none')
         }
     } else {
         // hide the DIV where the search result appears
         var x = document.getElementById("searchResult")
-        if (x.style.display === 'inline-block') {
+        if (x.style.display === 'block') {
             x.style.display = 'none'
         }
-        d3.select('.svg-pie').style('display', 'none')
+        d3.select('#svgPie').style('display', 'none')
+        d3.select('#svgLolli').style('display', 'none')
     }
 }
 
@@ -622,6 +874,28 @@ function searchWordInLexicon(searchWord) {
             return entry;
         }
     }
+}
+
+function getStopWords() {
+    mappedData = lexiconData.map(entry => ({
+        word: entry.lexicon_word,
+        occurrences: entry.occurrences,
+        nbr_texts: entry.nbr_texts,
+    }))
+
+    mappedData.sort(function(a, b) {
+        return b.occurrences - a.occurrences
+    })
+    
+    topWords = mappedData.slice(0, 100)
+    topWordsFiltered = topWords.filter(function(d) {return d.nbr_texts >= 40})
+    
+    stopWordsArray = []
+    topWordsFiltered.forEach(entry => {
+        stopWordsArray.push(entry.word)
+    })
+    
+    return stopWordsArray
 }
 
 function getEntryData(lexiconEntry) {
@@ -643,13 +917,14 @@ function getEntryData(lexiconEntry) {
             }
         }
     })
+
     wordNbrChapters = lexiconEntry.nbr_texts
     wordChapters = ""
     // iterate over all chapter titles to find those where the word appears (where title == 1)
     chapterTitleData.forEach(chapterTitle => {
         title_short = chapterTitle.chapter_abbrev
         title_full = chapterTitle.chapter_title
-        if (wordNbrChapters > 3) {
+        if (wordNbrChapters > 1) {
             wordChapters = wordNbrChapters + " chapters of Manuscript"
         } else {
             if (lexiconEntry[title_short] == 1) {
@@ -661,6 +936,7 @@ function getEntryData(lexiconEntry) {
             }
         }
     })
+
     return {
         lexiconWord: lexiconWord,
         yearRange: yearRange,
@@ -668,6 +944,7 @@ function getEntryData(lexiconEntry) {
         medLink: medLink,
         wordEtymology: wordEtymology,
         wordChapters: wordChapters,
+        wordNbrChapters: wordNbrChapters,
     }
 }
 
