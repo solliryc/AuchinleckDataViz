@@ -1,5 +1,5 @@
 # AuchinleckDataViz
-[homepage](screenshots/homepage.PNG)
+![homepage](screenshots/homepage.PNG)
 
 ## Demo
 https://solliryc.github.io/AuchinleckDataViz/
