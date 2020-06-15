@@ -6,8 +6,11 @@
     <title>Auchinleck Manuscript - Data Viz</title>
     <link rel="stylesheet" href="styles/normalize.css">
     <link rel="stylesheet" href="styles/main.css">
-    <!-- Bootstrap CSS -->
+    
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+    <!-- Bootstrap CSS
+    <link rel="stylesheet" href="styles/bootstrap.css">
+    -->
     <!-- tail select CSS-->
     <link type="text/css" rel="stylesheet" href="styles/tail.select-default.css">
 </head>
@@ -21,20 +24,20 @@
 
         <form id="searchForm" autocomplete="off">
             <div class="autocomplete" style="width:300px;">
-                <input id="searchWord" type="text" placeholder="Word">
+                <input id="searchWord" type="text" placeholder="Search a word">
             </div>
             <button type="button" id="searchButton" onclick="displaySearchResult()" value="Search">Search</button>
         </form>
 
         <div id="searchResult" style="display: none;"></div>
         <div id="chapterPie"></div>
-        <div id="wordsLollipop">
-        </div>
+        <div id="wordsLollipop"></div>
+        <div id="etymologyStacked"></div>
         <div id="yearHistogram">
-            <h3>When did the words in the Manuscript appear in Middle English? </h3>
+            <span class="chartHeading">When did the Manuscript words appear in Middle English language?<sup><a href="#note1">1</a></sup> </span>
             <fieldset>
                 <legend>Choose the options:</legend>
-                <table style="width: 100%;">
+                <table>
                     <tr>
                         <td>
                             <select id="selectEtymologyHisto" class="selectEtymology" multiple></select>
@@ -59,10 +62,10 @@
             </fieldset>
         </div>
         <div id="categoryBarChart">
-            <h3>How many words are there by etymology?</h3>
+            <span class="chartHeading">How many words are there by etymology?</span>
             <fieldset>
                 <legend>Choose the options:</legend>
-                <table style="width: 100%;">
+                <table>
                     <tr>
                         <td>
                             <select id="selectChapter" class="select" multiple></select>
@@ -80,16 +83,21 @@
                 </table>
             </fieldset>
         </div>
+        <div id="notes">
+            <span>Notes: <br></span>
+        <span id="note1"><sup>1</sup> The year of apparition of a word in the Middle English language is an estimation based on the year of the earliest citation found in the Middle English Dictionary.</span>
+        </div>
     </div>
-    <!-- <footer class="footer mt-auto py-3">
+    <footer class="footer mt-auto py-3">
         <div class="container text-muted">
             <p>
                 Sources:<br>
-                <a href="https://auchinleck.nls.uk/" target='_blank'>The Auchinleck Manuscript</a> (eds David Burnley and Alison Wiggins, National Library of Scotland, 2003)<br>
-                <a href="https://ota.bodleian.ox.ac.uk/repository/xmlui/handle/20.500.12024/2493" target='_blank'>The Auchinleck Manuscript on the Oxford Text Archive</a> (eds David Burnley and Alison Wiggins, National Library of Scotland, Oxford Text Archive, 2003)
+                <a href="https://auchinleck.nls.uk/" target='_blank'>The Auchinleck Manuscript</a> (eds: David Burnley and Alison Wiggins, National Library of Scotland, 2003)<br>
+                <a href="https://ota.bodleian.ox.ac.uk/repository/xmlui/handle/20.500.12024/2493" target='_blank'>The Auchinleck Manuscript on the Oxford Text Archive</a> (eds David Burnley and Alison Wiggins, National Library of Scotland, Oxford Text Archive, 2003) <br>
+                <a href="https://quod.lib.umich.edu/m/middle-english-dictionary" target="_blank">Middle English Dictionary</a> (eds: Frances McSparran, Ann Arbor, et al., University of Michigan Library, 2000-2018)
             </p>
         </div>
-    </footer> -->
+    </footer>
 
     <!-- D3 script -->
     <script src="https://d3js.org/d3.v5.min.js"></script>

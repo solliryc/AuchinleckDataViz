@@ -13,7 +13,7 @@ const marginLolli = {top: 20, right: 30, bottom: 50, left: 50};
 
 // initialize booleans
 var weightedBool = false;
-var occurrencesBool = false;
+var occurrencesHistoBool = false;
 var occurrencesBarChartBool = false;
 
 // initialize empty arrays
@@ -116,7 +116,6 @@ function onDataLoaded(data) {
     chapterSelectedOptions = chapterTitleData
 
     var nbrEtymology = Object.keys(etymologyOptions).length
-    console.log(etymologyData)
     
     for (let i = 0; i < etymologyData.length; i++) {
         var etymology = etymologyData[i]
@@ -124,8 +123,6 @@ function onDataLoaded(data) {
         etymology.language_color = color
         colorEtymology.push(color)
     }
-    console.log(colorEtymology)
-    console.log(etymologyData)
 
     autocomplete(document.getElementById("searchWord"), words);
     
@@ -141,6 +138,8 @@ function onDataLoaded(data) {
     
     showWordsLollipop()
     d3.select('#svgLolli').style('display', 'none')
+
+    showEtymologyStacked()
 }
 
 function populateEtymologyOptionsListHisto() {
@@ -152,7 +151,6 @@ function populateEtymologyOptionsListHisto() {
         search: true,
         sortGroups: 'ASC', 
         sortItems: 'ASC',
-        descriptions: true,
     } );
 
     // populate etymology options selection with the list of etymologies
@@ -209,13 +207,12 @@ function populateEtymologyOptionsListHisto() {
 function populateEtymologyOptionsListBar() {
     // initialize etymology options selection
     var select = tail.select("#selectEtymologyBar", {
-        multiLimit: 7, 
         multiShowLimit: true,
+        multiSelectAll: true,
         placeholder: 'Select the etymologies',
         search: true,
         sortGroups: 'ASC', 
         sortItems: 'ASC',
-        descriptions: true,
     } );
 
     // populate etymology options selection with the list of etymologies
@@ -320,9 +317,9 @@ function optionsYearHistogram() {
             var wordsCheck = document.getElementById('radio-words')
             
             if (wordsCheck.checked) {
-                occurrencesBool = false
+                occurrencesHistoBool = false
             } else {
-                occurrencesBool = true
+                occurrencesHistoBool = true
             }
             showYearHistogram()
         })
@@ -470,6 +467,9 @@ function showWordsLollipop(chapterAbbrev, color) {
     // make the svg visible
     d3.select('#svgLolli')
         .style('display', 'inline-block')
+    
+    d3.select('#wordsLollipop')
+        .style('margin-bottom', '50px')
 
     // remove previously drawn content
     d3.selectAll('.contentLolli')
@@ -526,10 +526,10 @@ function showWordsLollipop(chapterAbbrev, color) {
             .on("mousemove", moveTooltip)
             .on("mouseout", hideTooltip)
 
-    // axis legend
+    // x axis legend
     svgLolli.append('g')
         .append('text')
-        .attr('class', 'contentLolli')
+        .attr('class', 'contentLolli chartLegend')
         .attr('x', chartWidth/2)
         .attr('y', heightLolli - margin.top - 5)
         .attr("text-anchor", "middle")
@@ -539,11 +539,10 @@ function showWordsLollipop(chapterAbbrev, color) {
     // title
     svgLolli.append('g')
         .append('text')
-        .attr('class', 'contentLolli')
+        .attr('class', 'contentLolli chartTitle')
         .attr('x', chartWidth/2)
         .attr('y', 0)
         .attr("text-anchor", "middle")
-        .attr('text-decoration', 'underline')
         .text('Most frequent words in ')
         .append('tspan')
             .text(chapterName)    
@@ -626,7 +625,7 @@ function showChapterPie() {
         .style('display', 'inline-block')
     
     // remove previous drawn pie sections
-    d3.selectAll('g.arc')
+    svgPie.selectAll('g')
         .remove()
 
     var radius = Math.min(widthPie - marginPie.left, heightPie - marginPie.top) / 2
@@ -657,11 +656,12 @@ function showChapterPie() {
         .on("mouseout", hideTooltip)
 
     // title
-    svgPie.append('text')
+    svgPie.append('g')
+        .append('text')
+        .attr('class', 'chartTitle')
         .attr('x', 0)
         .attr('y', -(heightPie)/2)
         .attr('text-anchor', 'middle')
-        .attr('text-decoration', 'underline')
         .text('Word occurrences in Manuscript chapters')
 
     // make the lollipop SVG visible
@@ -786,7 +786,7 @@ function showYearHistogram() {
             // for each bin
             for (let j = 0; j < bins.length; j++) {
                 // if showing by number of occurrences (tokens)
-                if (occurrencesBool) {
+                if (occurrencesHistoBool) {
                     // compute the sum of occurrences of the bin, compute the weighted height of the bin
                     binOccurrences = d3.sum(bins[j], function(d) {return +d.occurrences})
                     binsHeight = binOccurrences / totalBinsOccurrences
@@ -811,7 +811,7 @@ function showYearHistogram() {
             // for each bin
             bins.forEach(bin => {
                 // if showing by number of occurrences (tokens)
-                if (occurrencesBool) {
+                if (occurrencesHistoBool) {
                     // compute the sum of occurrences of the bin
                     binSize = d3.sum(bin, function(d) {return +d.occurrences})
                 // if showing by number of words (types)
@@ -839,9 +839,15 @@ function showYearHistogram() {
         .call(d3.axisBottom(x));
     
     // add y axis
-    svgHisto.append("g")
-        .attr("transform", `translate(${margin.left}, 0)`)
-        .call(d3.axisLeft(y));
+    if (weightedBool) {
+        svgHisto.append("g")
+            .attr("transform", `translate(${margin.left}, 0)`)
+            .call(d3.axisLeft(y).tickFormat(d3.format('.0%')));
+    } else {
+        svgHisto.append("g")
+            .attr("transform", `translate(${margin.left}, 0)`)
+            .call(d3.axisLeft(y));
+    }
     
     // remove first and last threshold, to hide first and last threshold line
     yearThreshold.splice(0, 1)
@@ -973,6 +979,7 @@ function showYearHistogram() {
     // x axis legend
     svgHisto.append('g')
         .append('text')
+        .attr('class', 'chartLegend')
         .attr('x', chartWidth/2)
         .attr('y', height - margin.top + 10)
         .attr("text-anchor", "middle")
@@ -981,6 +988,7 @@ function showYearHistogram() {
     // y axis legend
     svgHisto.append('g')
         .append('text')
+        .attr('class', 'chartLegend')
         .attr("transform", "rotate(-90)")
         // inverted x and y because of rotation (x: height, y: width)
         .attr('y', 0 + 20)
@@ -989,7 +997,7 @@ function showYearHistogram() {
         .text(function() {
             if (weightedBool) {return 'Frequency (in %)' }
             else {
-                if (occurrencesBool) {return 'Number of occurrences'}
+                if (occurrencesHistoBool) {return 'Number of occurrences'}
                 else {return 'Number of words'}
             }
         })
@@ -1048,7 +1056,10 @@ function showCategoryBarChart() {
                 var count = d3.sum(categoryData, function(d) {return +d.occurrences})
             } else {
                 var filteredData = categoryData.filter(function(d) {return d[abbrev] == 1})
-                var count = d3.sum(filteredData, function(d) {return +d['occurrences']})
+                var count = 0
+                chapterList.forEach(chapter => {
+                    count = count + d3.sum(filteredData, function(d) {return +d[chapter.chapter_abbrev + '_occurrences']})
+                })
             }
         // if the words option is selected
         } else {
@@ -1080,6 +1091,57 @@ function showCategoryBarChart() {
     }
     etymologyBarChartData.sort(compare)
 
+    // create info bubble to display info when overing mouse on bins
+    var tooltip = d3.select("body")
+        .append("div")
+            .attr("class", "tooltip")
+            .style("position", "absolute")
+            .style("z-index", '10')
+            .style("visibility", "hidden")
+            .style("opacity", 1)
+            .style("background-color", "black")
+            .style("color", "white")
+            .style("border-radius", "5px")
+            .style("padding", "10px")
+
+    // show tooltip when mouse is over a bin
+    var showTooltip = function(d) {
+        if (occurrencesBarChartBool) {
+            tooltipString = `${d.label}</br>${d.count} occurrences`
+        } else {
+            tooltipString = `${d.label}</br>${d.count} occurrences`
+        }
+        tooltip
+            .style('visibility', 'visible')
+            .html(tooltipString)
+        d3.selectAll('.rectBar')
+            .style('opacity', 0.6)
+        d3.select(this)
+            .style("stroke", "black")
+            .style('stroke-width', '1px')
+            .style('stroke-opacity', 0)
+            .style("opacity", 1)
+            .style('z-index', '5')
+    }
+
+    // move tooltip when mouse moves over a bin
+    var moveTooltip = function() {
+        tooltip
+            .style("top", (event.pageY-10)+"px")
+            .style("left", (event.pageX + 10) + "px")
+    }
+
+    // hide tooltip when mouse leaves a bin
+    var hideTooltip = function() {
+        tooltip
+            .style("visibility", "hidden")
+        d3.selectAll('.rectBar')
+            .style('opacity', 1)
+        d3.select(this)
+            .style("stroke", 'none')
+            .style("opacity", 1)
+    }
+
     // initialize chart variables
     var chartHeight = height - margin.bottom
     var chartWidth = width - margin.right
@@ -1103,11 +1165,6 @@ function showCategoryBarChart() {
         .range([margin.left, chartWidth])
         .padding(0.1)
         .round(true)
-    
-    // create color scale
-    const bar_color = d3.scaleOrdinal()
-        //.domain([0, yMax])
-        .range(d3.schemeTableau10)
 
     // add the bar rectangles to the svg element
     svgBarChart.append('g')
@@ -1121,16 +1178,32 @@ function showCategoryBarChart() {
             .attr('y', y(0))
             .attr('x', d => x(d.label))
             .style('fill', d=> d.color)
+            .on("mouseover", showTooltip)
+            .on("mousemove", moveTooltip)
+            .on("mouseout", hideTooltip)
 
-    // add x axis
-    svgBarChart.append('g')
+
+    // add x axis. If there are more than 6 bars, do not display ticks
+    if (etymologyList.length < 7) {
+        svgBarChart.append('g')
         .attr("transform", `translate(0, ${chartHeight})`)
         .call(d3.axisBottom(x))
+    } else {
+        svgBarChart.append('g')
+        .attr("transform", `translate(0, ${chartHeight})`)
+        .call(d3.axisBottom(x).tickValues([]))
+    }
 
     // add y axis
-    svgBarChart.append('g')
+    if (yMax > 10000) {
+        svgBarChart.append('g')
         .attr('transform', `translate(${margin.left}, 0)`)
-        .call(d3.axisLeft(y))
+        .call(d3.axisLeft(y).ticks(5, "s"))
+    } else {
+        svgBarChart.append('g')
+            .attr('transform', `translate(${margin.left}, 0)`)
+            .call(d3.axisLeft(y))
+    }
     
     // animation of bars
     svgBarChart.selectAll('.rectBar')
@@ -1140,8 +1213,9 @@ function showCategoryBarChart() {
         .attr("height", function(d) {return chartHeight - y(d.count);})
         .delay((d,i) => {return(i*delay)})
 
-    // add titles
-    svgBarChart.append('g')
+    // add titles over bars if there are max. 10 bars
+    if (etymologyList.length <= 10) {
+        svgBarChart.append('g')
         .attr('text-anchor', 'middle')
         .attr('transform', `translate(${x.bandwidth() / 2}, 10)`)
         .selectAll('text')
@@ -1159,17 +1233,19 @@ function showCategoryBarChart() {
                 .duration(duration)
                 .delay((d,i) => {return(i*delay + duration)})
                 .attr('fill-opacity', 1)
+    }
     
     // y axis legend
     svgBarChart.append('g')
         .append('text')
+        .attr('class', 'chartLegend')
         .attr("transform", "rotate(-90)")
         // inverted x and y because of rotation (x: height, y: width)
         .attr('y', 0 + 20)
         .attr('x', 0 - height/2)
         .attr("text-anchor", "middle")
         .text(function() {
-            if (occurrencesBool) {return 'Number of occurrences'}
+            if (occurrencesBarChartBool) {return 'Number of occurrences'}
             else {return 'Number of words'}
         })
 
@@ -1203,6 +1279,24 @@ function showCategoryBarChart() {
     }
 }
 
+function showEtymologyStacked() {
+    chapterTitleData.forEach(chapter => {
+        chapterAbbrev = chapter.chapter_abbrev
+        chapterTitle = chapter.chapter_title
+        dataFilteredByChapter = lexiconData.filter(function(d) {return d[chapterAbbrev] == 1})
+        
+        etymologyData.forEach(etymology => {
+            etymologyAbbrev = etymology.language_abbrev
+            etymologyName = etymology.language_name
+            dataFilteredByEtymology = dataFilteredByChapter.filter(function(d) {return d[etymologyAbbrev] == 1})
+            
+            count = dataFilteredByEtymology.length
+            occurrences = d3.sum(dataFilteredByEtymology, function(d) {return d[chapterAbbrev + '_occurrences']})
+            //console.log(chapterTitle, etymologyName, count, occurrences)
+        })
+    })
+}
+
 function displaySearchResult() {
     var searchValue = document.getElementById("searchWord").value
     // if a non-empty string has been submitted
@@ -1222,22 +1316,22 @@ function displaySearchResult() {
             entryData = getEntryData(lexiconEntry)
             // display the search result
             document.getElementById("searchResult").innerHTML = 
-                "<table style='width: 100%'>" +
-                    "<tr>" +
-                        "<th>Word</th>" +
-                        "<th>Year range</th>" +
-                        "<th>Etymology</th>" +
-                        "<th>Occurrences</th>" +
-                        "<th>In</th>" +
-                        "<th>MED entry</th>" +
-                    "</tr>" +
-                    "<tr>" +
+                "<table id='tableResults'>" +
+                    "<tr id='tableData'>" +
                         "<td>" + entryData.lexiconWord + "</td>" +
                         "<td>" + entryData.yearRange + "</td>" +
                         "<td>" + entryData.wordEtymology + "</td>" +
                         "<td>" + entryData.occurrences + "</td>" +
-                        "<td>" + entryData.wordChapters + "</td>" +
+                        "<td>" + entryData.wordNbrChapters + "</td>" +
                         "<td><a href=" + entryData.medLink + " target='_blank'>" + entryData.medWord + "</td>" +
+                    "</tr>" +
+                    "<tr id='tableLegend'>" +
+                        "<td>Word</td>" +
+                        "<td>Year range</td>" +
+                        "<td>Etymology</td>" +
+                        "<td>Occurrences</td>" +
+                        "<td>Chapters</td>" +
+                        "<td>MED entry</td>" +
                     "</tr>" +
                 "</table>"
             showChapterPie()
@@ -1408,14 +1502,7 @@ function autocomplete(input, array) {
                 // simulate a click on the search button
                 document.getElementById("searchButton").click();
             }
-        }/*
-        if (e.keyCode == 13) {
-            // if the ENTER key is pressed, prevent the form from being submitted 
-            e.preventDefault()
-            console.log('click')
-            // simulate a click on the search button
-            document.getElementById("searchButton").click();
-        }*/
+        }
     });
     function addActive(x) {
         /*a function to classify an item as "active":*/

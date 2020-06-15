@@ -60,6 +60,7 @@ input[type=button] {
 .autocomplete-items div {
   padding: 10px;
   cursor: pointer;
+  color:currentColor;
   background-color: #fff;
   border-bottom: 1px solid #d4d4d4;
 }
@@ -72,11 +73,73 @@ input[type=button] {
   background-color: DodgerBlue !important;
   color: #ffffff;
 }
-#searchResult {
-  display: block;
+.chartHeading{
+  font-size: 150%;
+  font-weight: 500;
 }
 svg {
   display: block;
+}
+.chartLegend{
+  font-weight: lighter;
+}
+.chartTitle{
+  font-weight: lighter;
+}
+text {
+  fill: currentColor;
+  font-weight: normal;
+}
+fieldset > div {
+  display: inline;
+}
+fieldset > legend {
+  font-size: large;
+}
+table{
+  width: 100%;
+  text-align: center;
+}
+h1, h2{
+  text-align: center;
+}
+#searchForm{
+  margin: auto;
+  width: 400px;
+  margin-top: 20px;
+  margin-bottom: 0px;
+}
+#searchResult {
+  display: block;
+  margin-top: 20px;
+  margin-bottom: 50px;
+}
+#tableLegend td{
+  font-weight: lighter;
+  border-right: solid 1px ;
+}
+#tableData td{
+  font-weight: bold;
+  border-right: solid 1px ;
+  font-size: 110%;
+}
+#tableResults tr td:last-of-type {
+  border: none;
+}
+#chapterPie{
+  display: inline-block;
+}
+#wordsLollipop{
+  display: inline-block;
+}
+#yearHistogram{
+  margin-bottom: 50px;
+}
+#categoryBarChart{
+  margin-bottom: 50px;
+}
+#notes{
+  text-align: justify;
 }
 .footer {
   position: relative;
@@ -84,14 +147,4 @@ svg {
   bottom: 0;
   width: 100%;
   background-color: #f5f5f5;
-
-}
-fieldset > div {
-  display: inline;
-}
-#chapterPie{
-  display: inline-block;
-}
-#wordsLollipop{
-  display: inline-block;
 }
