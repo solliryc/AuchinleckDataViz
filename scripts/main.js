@@ -269,7 +269,7 @@ function populateEtymologyOptionsListBar() {
 function populateChapterOptionList() {
     // initialize etymology options selection
     var select = tail.select("#selectChapter", {
-        placeholder: 'Select the chapters',
+        placeholder: 'Select the poems',
         search: true,
         sortItems: 'ASC',
         multiSelectAll: true,
@@ -588,7 +588,7 @@ function showChapterPie() {
 
     // show tooltip when mouse is over a bin
     var showTooltip = function(d) {
-        tooltipString = `Chapter: ${d.data.chapterTitle}</br>Word occurrences: ${d.data.chapterOccurrences}`
+        tooltipString = `Poem: ${d.data.chapterTitle}</br>Word occurrences: ${d.data.chapterOccurrences}`
         tooltip
             .style('visibility', 'visible')
             .html(tooltipString)
@@ -662,7 +662,7 @@ function showChapterPie() {
         .attr('x', 0)
         .attr('y', -(heightPie)/2)
         .attr('text-anchor', 'middle')
-        .text('Word occurrences in Manuscript chapters')
+        .text('Word occurrences in Manuscript poems')
 
     // make the lollipop SVG visible
     d3.select('#svgLolli')
@@ -1329,7 +1329,7 @@ function displaySearchResult() {
                         "<td>Year range</td>" +
                         "<td>Etymology</td>" +
                         "<td>Occurrences</td>" +
-                        "<td>Chapters</td>" +
+                        "<td>Poems</td>" +
                         "<td>MED entry</td>" +
                     "</tr>" +
                 "</table>"

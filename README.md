@@ -21,7 +21,7 @@ Variables disponibles pour chaque mot:
 * (poème): indique pour chaque poème, si le mot en fait partie (1 si oui, 0 si non)
 * (poème)_occurrences: le nombre de fois que le mot apparaît dans chaque poème
 
-Comme pour le Auchinleck Manuscript, il n'existe pas de fichier de données du Middle English Dictionary (MED) prêt à être analysé. Il a fallu donc récupérer les données à partir de la version numérique du [MED](https://quod.lib.umich.edu/m/middle-english-dictionary). Cette version du MED comporte plus de 54'000 entrées, qui sont homogènes au niveau de la mise-en-forme, mais pas uniformes au niveau du contenu. Certaines entrées ont des données étymologiques et temporelles, d'autres pas. Au total, 54'507 entrées du MED ont été extraites.
+Comme pour le Auchinleck Manuscript, il n'existe pas de fichier de données du Middle English Dictionary (MED) prêt à être analysé. Il a fallu donc récupérer les données à partir de la version numérique du [MED](https://quod.lib.umich.edu/m/middle-english-dictionary). Cette version du MED comporte plus de 54'000 entrées, qui sont homogènes au niveau de la mise-en-forme, mais pas uniformes au niveau du contenu. Certaines entrées ont des données étymologiques et temporelles, d'autres pas. L'intervalle durant lequel est apparu le mot est donné dans les citations de l'entrée. Au total, 54'507 entrées du MED ont été extraites.
 
 Variables disponibles pour chaque entrée:
 * med_word: la forme du mot dans le dictionnaire
@@ -30,11 +30,14 @@ Variables disponibles pour chaque entrée:
 * year_to_1: la limite supérieure de l'intervalle durant lequel est apparu le mot
 * (étymologie): indique pour chaque étymologie, si le mot en vient (1 si oui, 0 si non)
 
-Une fois ces deux jeux données récupérés, il a fallu les mettre en commun
+Une fois ces deux jeux données récupérés, il a fallu les mettre en commun. Il n'a été gardé que les mots du Auchinleck Manuscript pour lesquels une correspondance avec une entrée du MED pouvait être établie. Cette correspondance avec le MED a été possible grâce au moteur de recherche disponible sur le site du MED.
+
+Ainsi, un lexique de 14'378 mots, répartis dans 43 poèmes différents, totalisant 309'351 occurrences, et comprenant 96 étymologies différentes, a été produit.
 
 ## Fonctionnalités
 ### Bar de recherche
 ![alt text](screenshots/searchbar_1.PNG)
+
 La barre de recherche permet de voir les données disponibles pour chacun des mots du lexique du Auchinleck Manuscript. Le champ de recherche comporte une fonction de saisie semi-automatique. Il est possible de naviguer dans les suggestions soit avec les flèches du clavier et la touche <i>Enter</i> soit avec la souris.
 
 La recherche d'un mot du lexique affiche 6 champs en-dessous de la barre:
@@ -47,21 +50,31 @@ La recherche d'un mot du lexique affiche 6 champs en-dessous de la barre:
 
 ### Distribution d'un mot dans les poèmes
 ![alt text](screenshots/piechart_1.PNG)
-La recherche d'un mot fait aussi apparaître un camembert (pie chart) en-dessous de la barre de recherche. Ce camembert indique le nombre de fois (occurrences) que le mot cherché apparaît dans chaque poème du Manuscript. En survolant un des arcs de cercle du camembert, une infobulle indique le titre du poème correspondant et le nombre d'occurrences.
+
+La recherche d'un mot fait aussi apparaître un camembert (pie chart) en-dessous de la barre de recherche. Ce camembert indique le nombre de fois (occurrences) que le mot cherché apparaît dans chaque poème du manuscrit. En survolant un des arcs de cercle du camembert, une infobulle indique le titre du poème correspondant et le nombre d'occurrences.
 
 ### Mots les plus fréquents dans un poème
 ![alt text](screenshots/lollipopchart_1.PNG)
+
 En cliquant sur un des arcs de cercle du camembert, un graphique lollipop (lollipop chart) apparaît sur la droite du camembert. Ce graphique indique les 10 mots les plus fréquents dans le poème séléctionné sur le camembert. Pour éviter d'afficher les mots les plus courants dans l'ensemble du Manuscript, les 30 mots les plus fréquents, qui apparaissent au moins dans 40 poèmes, ne sont pas pris en compte. En survolant avec la souris la "boule" au bout de chaque ligne du graphique, une infobulle indique le mot, le nombre d'occurrences dans le poème et le titre du poème.
 
-### Distribution temporelle des mots, selon l'étymologie
+### Distribution temporelle des mots
 ![alt text](screenshots/histogram_1.PNG)
 
+Cet histogramme permet de voir sur l'ensemble du manuscrit la distribution temporelle des mots, en fonction de l'année approximative durant laquelle ils sont apparus dans la langue anglaise. L'approximation de l'année d'apparition est calculée comme la moyenne de l'intervalle donné dans le MED. La largeur de chaque colonne correspond à une période de 50 ans.
 
-### Décompte des mots, selon le poème et l'étymologie
+Trois options sont disponibles:
+* Il est possible de sélectionner jusqu'à 4 étymologies différentes pour comparer côte-à-côte le nombre de mots apparus pendant chaque intervalle de 50 ans.
+* <i>Count</i> ou <i>Frequency</i>: possibilité d'alterner entre le nombre absolu et la fréquence 
+* <i>Words</i> ou <i>Occurrences</i>: possiblité d'alterner entre le nombre de mots uniques (type) et le nombre d'apparitions des mots (token)
+
+### Nombre de mots par étymologie
 ![alt text](screenshots/barchart_1.PNG)
 
-## Discussion
+Ce diagramme en barre permet de voir le nombre de mots (ou d'occurrences) 
 
+## Discussion
+Ces visualisation permettent notamment de voir l'influence grandissante du français et de ses étymologies associées. 
 
 ## A propos
 ### Librairies utilisées
