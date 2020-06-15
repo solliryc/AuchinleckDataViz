@@ -61,20 +61,32 @@ En cliquant sur un des arcs de cercle du camembert, un graphique lollipop (lolli
 ### Distribution temporelle des mots
 ![alt text](screenshots/histogram_1.PNG)
 
-Cet histogramme permet de voir sur l'ensemble du manuscrit la distribution temporelle des mots, en fonction de l'année approximative durant laquelle ils sont apparus dans la langue anglaise. L'approximation de l'année d'apparition est calculée comme la moyenne de l'intervalle donné dans le MED. La largeur de chaque colonne correspond à une période de 50 ans.
+Cet histogramme permet de voir sur l'ensemble du manuscrit la distribution temporelle des mots, en fonction de l'année approximative durant laquelle ils sont apparus dans la langue anglaise. L'approximation de l'année d'apparition est calculée comme la moyenne de l'intervalle donné dans le MED. La largeur de chaque colonne correspond à une période de 50 ans. En survolant une colonne avec la souris, une infobulle indique l'étymologie, l'intervalle temporel et le nombre absolu (ou la fréquence).
 
 Trois options sont disponibles:
-* Il est possible de sélectionner jusqu'à 4 étymologies différentes pour comparer côte-à-côte le nombre de mots apparus pendant chaque intervalle de 50 ans.
+* Sélection des étymologies: possibilité de sélectionner jusqu'à 4 étymologies différentes pour comparer côte-à-côte la distribution temporelle des mots de différentes étymologies
 * <i>Count</i> ou <i>Frequency</i>: possibilité d'alterner entre le nombre absolu et la fréquence 
-* <i>Words</i> ou <i>Occurrences</i>: possiblité d'alterner entre le nombre de mots uniques (type) et le nombre d'apparitions des mots (token)
+* <i>Words</i> ou <i>Occurrences</i>: possiblité d'alterner entre le nombre de mots uniques (type) et le nombre d'apparitions des mots (token) 
 
 ### Nombre de mots par étymologie
 ![alt text](screenshots/barchart_1.PNG)
 
-Ce diagramme en barre permet de voir le nombre de mots (ou d'occurrences) 
+Ce diagramme en barre permet de voir le nombre de mots (ou d'occurrences) pour une ou plusieurs étymologies, dans un ou plusieurs poèmes. En survolant une colonne avec la souris, une infobulle indique l'étymologie et le nombre de mots (ou d'occurrences) que comprend cette étymologie dans les poèmes sélectionnés. La couleur assignée à chaque étymologie est la même dans l'histogramme et dans le diagramme en barre, afin de faciliter la lecture.
+
+Trois options sont disponibles:
+* Sélection des poèmes: possiblité de sélectionner entre 1 et 43 poèmes (l'ensemble du manuscrit)
+* Séletion des étymologies: possiblité de sélectionner entre 1 et 96 étymologies, plus 5 catégories qui regroupent les étymologies
+* <i>Words</i> ou <i>Occurrences</i>: possiblité d'alterner entre le nombre de mots uniques (type) et le nombre d'apparitions des mots (token) dans les textes sélectionnés
 
 ## Discussion
-Ces visualisation permettent notamment de voir l'influence grandissante du français et de ses étymologies associées. 
+Ces visualisations permettent de se rendre de plusieurs choses au niveau de la langue du Middle English.
+
+Tout d'abord, on peut voir l'influence grandissante du français et de ses étymologies associées au sein de la langue anglaise. On remarque cela grâce à l'histogramme en sélectionnant par exemple <i>Old English</i> et <i>Old French</i> (cf. image d'illustration de l'histogramme). Le nombre de mots venant du vieux français qui apparaissent dans le manuscrit font une entrée massive dans la langue du Middle English durant les années 1300-1350. Cet intervalle coincide avec les années de production du Auchinleck Manuscript.
+En sélectionnant l'option <i>Occurrences</i>, on remarque toutefois que les mots venant du <i>Old French</i> sont moins utilisés que les mots venant du <i>Old English</i>, même dans l'intervalle 1300-1350. De manière générale, les mots d'orgine française sont moins utilisés que les mots d'une autre origine.
+
+Le diagramme en barre permet lui de nous rendre compte à quel point le Middle English du Auchinleck Manuscript est composé de mots venant d'une multitude d'étymologies. On retrouve ainsi dans les étymologies qui comptent le plus de mots à la fois des origines nordiques (Old Icelandic), françaises (Old French), latines (Latin) ou anglaises (Old English). Cependant, comme pour l'histogramme, en sélectionnant l'option <i>Occurrences</i>, on remarque que les mots d'origine anglaise sont plus souvent utilisés que les mots d'autres origines.
+
+Il serait intéressant d'obtenir une analyse de ces visualisations de la part d'une personne spécialiste du Middle English ou de la langue anglaise en général. Elle pourrait potentiellement interpréter ces résultats avec une plus grande certitude.
 
 ## A propos
 ### Librairies utilisées
@@ -91,3 +103,6 @@ Ces visualisation permettent notamment de voir l'influence grandissante du fran�
 
 ### Auteur
 Ce projet a été réalisé par Cyrille Gay-Crosier dans le cadre du cours de Master <i>Visualisation de données</i>, donné par Loïc Cattani, au printemps 2020, à l'UNIL.
+
+### Remerciements
+Rory Critten (MER en Anglais à l'UNIL) et Davide Picca (MER en Informatique pour les sciences humaines à l'UNIL) pour leur aide et leurs conseils dans la récupération et le traitement des données.
