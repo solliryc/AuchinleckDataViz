@@ -954,27 +954,26 @@ function showYearHistogram() {
                 .on("mouseover", showTooltip)
                 .on("mousemove", moveTooltip)
                 .on("mouseout", hideTooltip)
-                
-        
-        var legend = svgHisto.selectAll(".legend")
-            .data(binsList[i])
+    }
+
+    var legend = svgHisto.selectAll(".legend")
+            .data(binsList)
             .enter()
             .append("g")
     
         legend.append("rect")
-            .attr("fill", etymologyList[i].color)
+            .attr("fill", function(d,i) {return etymologyList[i].color})
             .attr("width", 20)
             .attr("height", 20)
-            .attr("y", i * 30)
+            .attr("y", function(d,i) {return i * 30})
             .attr("x", chartWidth - 200);
     
         legend.append("text")
             .attr("class", "label")
-            .attr("y", 16 + i * 30)
+            .attr("y", function(d,i) {return 16 + i * 30})
             .attr("x", chartWidth - 170)
             .attr("text-anchor", "start")
-            .text(etymologyList[i].name);
-    }
+            .text(function(d,i) {return etymologyList[i].name});
 
     // x axis legend
     svgHisto.append('g')
@@ -1109,7 +1108,7 @@ function showCategoryBarChart() {
         if (occurrencesBarChartBool) {
             tooltipString = `${d.label}</br>${d.count} occurrences`
         } else {
-            tooltipString = `${d.label}</br>${d.count} occurrences`
+            tooltipString = `${d.label}</br>${d.count} words`
         }
         tooltip
             .style('visibility', 'visible')
