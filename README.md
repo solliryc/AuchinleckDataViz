@@ -12,8 +12,14 @@ Il est donc intéressant
 ## Données
 
 
-## Graphiques
+## Fonctionnalités
+### Bar de recherche
+![alt text](screenshots/searchbar_1.PNG)
 
+### Pie Chart
+### Lollipop chart
+### Histogram
+### Bar chart
 
 ## Discussion
 
