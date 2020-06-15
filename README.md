@@ -6,9 +6,9 @@ https://solliryc.github.io/AuchinleckDataViz/
 
 ## Description
 Projet de visualisation de données sur le lexique du Auchinleck Manuscript pour le cours de Visualisation de données.
-Le Auchinleck Manuscript est un ouvrage produit à Londres dans les années 1330, qui fait office d'oeuvre de référence de la période du Middle English (env. de 1050 à 1500). Composé de 43 textes, le Manuscript donne de nombreuses informations sur l'état de la langue anglaise à cette période.
+Le Auchinleck Manuscript est un recueil de poèmes produit à Londres dans les années 1330, qui fait office d'oeuvre de référence de la période du Middle English (env. de 1050 à 1500). Composé de 43 poèmes, le Auchinleck Manuscript donne de nombreuses informations sur l'état de la langue anglaise à cette période et la formation des dialectes à une époque où l'anglais n'était pas uniformisé.
 
-Il est donc intéressant 
+Il est donc intéressant d'analyser de quelles étymologies viennent les mots présents dans l'ouvrage. De plus, le fait que le Auchinleck Manuscript soit composé de plusieurs textes distincts, d'auteurs différents, permet d'observer des différences entre l'un ou l'autre des poèmes.
 
 ## Données
 
@@ -18,9 +18,16 @@ Il est donc intéressant
 ![alt text](screenshots/searchbar_1.PNG)
 
 ### Pie Chart
+![alt text](screenshots/piechart_1.PNG)
+
 ### Lollipop chart
+![alt text](screenshots/lollipopchart_1.PNG)
+
 ### Histogram
+![alt text](screenshots/histogram_1.PNG)
+
 ### Bar chart
+![alt text](screenshots/barchart_1.PNG)
 
 ## Discussion
 
