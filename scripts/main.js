@@ -928,7 +928,7 @@ function showYearHistogram() {
     // bars to histrogram
     for (let i = 0; i < binsList.length; i++) {
         svgHisto.append('g')
-            .selectAll('rect' + i.toString())
+            .selectAll('rect')
             .data(binsList[i])
             .join('rect')
                 .attr('class', 'rectHisto')
