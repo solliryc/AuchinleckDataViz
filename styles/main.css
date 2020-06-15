@@ -73,10 +73,6 @@ input[type=button] {
   color: #ffffff;
 }
 #searchResult {
-  padding: 1%;
-  border: 2px solid dodgerblue;
-  border-radius: 10px;
-  background-color: rgba(30, 143, 255, 0.075);
   display: block;
 }
 svg {

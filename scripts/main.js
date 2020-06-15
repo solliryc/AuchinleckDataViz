@@ -1,26 +1,32 @@
-// initialize constant variables with value
-const height = 400;
+// initialize constant variables
+const height = 450;
 const width = 900;
-const margin = {top: 20, right: 20, bottom: 20, left: 40}
+const margin = {top: 20, right: 20, bottom: 50, left: 70};
 
-const widthPie = 300
-const heightPie = 300
+const widthPie = 350;
+const heightPie = 350;
+const marginPie = {top: 20, right: 20, bottom: 20, left: 20};
 
-const widthLolli = 500
-const heightLolli = 300
-const marginLolli = {top: 10, right: 30, bottom: 40, left: 50}
+const widthLolli = 500;
+const heightLolli = 350;
+const marginLolli = {top: 20, right: 30, bottom: 50, left: 50};
 
 // initialize booleans
-var weightedBool = false
-var occurrencesBool = false
-var occurrencesBarChartBool = false
+var weightedBool = false;
+var occurrencesBool = false;
+var occurrencesBarChartBool = false;
 
+// initialize empty arrays
 var lexiconData = [];
 var etymologyData = [];
 var chapterTitleData = [];
 var frenchEtymologies = [];
 var words = [];
-var stopWords = []
+var stopWords = [];
+var colorEtymology = [];
+
+// initialize empty objects
+var etymologyOptions = {};
 
 // create svg object for pie chart
 const svgPie = d3.select("#chapterPie")
@@ -30,7 +36,7 @@ const svgPie = d3.select("#chapterPie")
         .attr("width", widthPie)
         .attr("height", heightPie)
         .append("g")
-            .attr("transform", `translate(${widthPie/2}, ${heightPie/2})`)
+            .attr("transform", `translate(${widthPie/2}, ${heightPie/2 + marginPie.top})`);
 
 const svgLolli = d3.select('#wordsLollipop')
     .append('svg')
@@ -39,48 +45,47 @@ const svgLolli = d3.select('#wordsLollipop')
         .attr('width', widthLolli)
         .attr('height', heightLolli)
         .append("g")
-            .attr("transform", `translate(${marginLolli.left}, ${marginLolli.top})`)
+            .attr("transform", `translate(${marginLolli.left}, ${marginLolli.top})`);
 
 
 // create svg object for year histogram
 const svgHisto = d3.select('#yearHistogram')
     .append('svg')
         .attr("width", width)
-        .attr('height', height)
+        .attr('height', height);
 
 // create svg object
 const svgBarChart = d3.select('#categoryBarChart')
 .append('svg')
     .attr('id', 'svgBarChart')
     .attr('width', width)
-    .attr('height', height)
+    .attr('height', height);
 
 // initialize constant variables
 const frenchAbbrevList = ['AF', 'AN', 'CF', 'F', 'MF', 'MnF', 'NF', 'OF', 'ONF', 'OProv.', 'Prov.']
 const latinAbbrevList = ['AL', 'CL', 'L', 'Latinate', 'LL', 'ML', 'VL', 'MnL (16th cent.)', 'pseudo-Latin']
 const etymologyCategoryLabels = [
-    {abbrev:'french_etymology', name: 'French-based etymology'},
-    {abbrev:'latin_etymology', name: 'Latin-based etymology'},
-    {abbrev:'other_etymology', name: 'Other etymology'},
-    {abbrev:'unknown_etymology', name: 'Unknown etymology'}
-]
+    {abbrev:'french_etymology', name: 'French-based etymology', color: '#bab0ab'},
+    {abbrev:'latin_etymology', name: 'Latin-based etymology', color: '#4e79a7'},
+    {abbrev:'other_etymology', name: 'Other etymology', color: '#f28e2c'},
+    {abbrev:'unknown_etymology', name: 'Unknown etymology', color: '#e15759'}
+];
 
 const defaultEtymologySelectedOptions = [
-    {abbrev: 'all', name: 'All etymologies'},
-]
-var etymologySelectedOptionsHisto = defaultEtymologySelectedOptions
-var etymologySelectedOptionsBar = etymologyCategoryLabels
+    {abbrev: 'all', name: 'All etymologies', color: '#76b7b2'},
+];
+var etymologySelectedOptionsHisto = defaultEtymologySelectedOptions;
+var etymologySelectedOptionsBar = etymologyCategoryLabels;
 
 const defaultChapterSelectedOptions = [
     {chapter_abbrev: 'arthur', chapter_title: "Of Arthour & of Merlin"}
-]
-var chapterSelectedOptions = defaultChapterSelectedOptions
+];
+var chapterSelectedOptions = defaultChapterSelectedOptions;
 
 function setup () {
 	// Charger les données (Attention: opération asynchrone !)
     loadData();
-    
-}
+};
 
 function loadData() {
 	// Attention, il s'agit d'une opération asynchrone !
@@ -93,7 +98,7 @@ function loadData() {
     ]).then(function(files){
         onDataLoaded(files)
     })
-}
+};
 
 function onDataLoaded(data) {
 	// Stocker ces données dans une variable déclarée dans le scope de ce
@@ -109,12 +114,24 @@ function onDataLoaded(data) {
     });
 
     chapterSelectedOptions = chapterTitleData
+
+    var nbrEtymology = Object.keys(etymologyOptions).length
+    console.log(etymologyData)
+    
+    for (let i = 0; i < etymologyData.length; i++) {
+        var etymology = etymologyData[i]
+        var color = d3.schemeTableau10[i % 10]
+        etymology.language_color = color
+        colorEtymology.push(color)
+    }
+    console.log(colorEtymology)
+    console.log(etymologyData)
+
+    autocomplete(document.getElementById("searchWord"), words);
     
     populateEtymologyOptionsListHisto()
     populateEtymologyOptionsListBar()
     populateChapterOptionList()
-
-    autocomplete(document.getElementById("searchWord"), words);
 
     showYearHistogram()
     optionsYearHistogram()
@@ -135,14 +152,18 @@ function populateEtymologyOptionsListHisto() {
         search: true,
         sortGroups: 'ASC', 
         sortItems: 'ASC',
+        descriptions: true,
     } );
 
     // populate etymology options selection with the list of etymologies
     etymologyOptions = {}
+    idx = 0
     for (let i = 0; i < etymologyData.length; i++) {
         const etymology = etymologyData[i]
         abbrev = etymology.language_abbrev
         name = etymology.language_name
+        color = etymology.language_color
+        idx = i
         
         // if there is no word of that etymology, do not put it in the list of options
         etymologySize = lexiconData.filter(function(d) {return d[abbrev] == 1}).length
@@ -157,16 +178,28 @@ function populateEtymologyOptionsListHisto() {
         } else {
             group ='Other'
         }
-        etymologyOptions[abbrev] = {value: name, group: group}
+        etymologyOptions[abbrev] = {
+            value: name, 
+            group: group, 
+            description: color,
+        }
     }
 
     // add to the options the etymology categories
     etymologyCategoryLabels.forEach(category => {
-        etymologyOptions[category.abbrev] = {value: category.name}
+        etymologyOptions[category.abbrev] = {
+            value: category.name,
+            description: d3.schemeTableau10[idx % 10],
+        }
+        idx++
     })
 
     // set the default selected etymology
-    etymologyOptions['all'] = {value: 'All etymologies', selected: true}
+    etymologyOptions['all'] = {
+        value: 'All etymologies', 
+        description: d3.schemeTableau10[idx % 10],
+        selected: true,
+    }
 
     // add the etymologies as options for all etymology select fields
     select.options.add(etymologyOptions)
@@ -176,20 +209,24 @@ function populateEtymologyOptionsListHisto() {
 function populateEtymologyOptionsListBar() {
     // initialize etymology options selection
     var select = tail.select("#selectEtymologyBar", {
-        multiLimit: 10, 
+        multiLimit: 7, 
         multiShowLimit: true,
         placeholder: 'Select the etymologies',
         search: true,
         sortGroups: 'ASC', 
         sortItems: 'ASC',
+        descriptions: true,
     } );
 
     // populate etymology options selection with the list of etymologies
     etymologyOptions = {}
+    idx = 0
     for (let i = 0; i < etymologyData.length; i++) {
         const etymology = etymologyData[i]
         abbrev = etymology.language_abbrev
         name = etymology.language_name
+        color = etymology.language_color
+        idx = i
         
         // if there is no word of that etymology, do not put it in the list of options
         etymologySize = lexiconData.filter(function(d) {return d[abbrev] == 1}).length
@@ -204,16 +241,28 @@ function populateEtymologyOptionsListBar() {
         } else {
             group ='Other'
         }
-        etymologyOptions[abbrev] = {value: name, group: group}
+        etymologyOptions[abbrev] = {
+            value: name, 
+            group: group,
+            description: color,
+        }
     }
 
     // add to the options the etymology categories
     etymologyCategoryLabels.forEach(category => {
-        etymologyOptions[category.abbrev] = {value: category.name, selected: true}
+        etymologyOptions[category.abbrev] = {
+            value: category.name,
+            description: d3.schemeTableau10[idx % 10],
+            selected: true,
+        }
+        idx++
     })
 
     // set the default selected etymology
-    etymologyOptions['all'] = {value: 'All etymologies'}
+    etymologyOptions['all'] = {
+        value: 'All etymologies', 
+        description: d3.schemeTableau10[idx % 10],
+    }
 
     // add the etymologies as options for all etymology select fields
     select.options.add(etymologyOptions)
@@ -287,17 +336,11 @@ function optionsYearHistogram() {
             options.forEach(option => {
                 abbrev = option.value
                 name = option.text
+                color = option.getAttribute('data-description')
 
-                var selectedOption = {abbrev: abbrev, name: option.text}
+                var selectedOption = {abbrev: abbrev, name: option.text, color: color}
                 etymologySelectedOptionsHisto.push(selectedOption)
             })
-            /*
-            // if no option is selected, 
-            if (etymologySelectedOptionsHisto.length < 1) {
-                etymologySelectedOptionsHisto = [
-                    {abbrev: 'all', name: 'All etymologies'},
-                ]
-            }*/
             showYearHistogram()
         })
 }
@@ -328,18 +371,12 @@ function optionsCategoryBarChart() {
             options.forEach(option => {
                 abbrev = option.value
                 name = option.text
+                color = option.getAttribute('data-description')
 
-                var selectedOption = {abbrev: abbrev, name: name}
+                var selectedOption = {abbrev: abbrev, name: name, color: color}
                 etymologySelectedOptionsBar.push(selectedOption)
             })
-            /*
-            // if no option is selected, 
-            if (etymologySelectedOptionsBar.length < 1) {
-                //populateEtymologyOptionsListBar()
-                console.log('nooooooooooooooo')
-                etymologySelectedOptionsBar = etymologyCategoryLabels
-            }
-            */
+
             showCategoryBarChart()
         })
     
@@ -434,6 +471,7 @@ function showWordsLollipop(chapterAbbrev, color) {
     d3.select('#svgLolli')
         .style('display', 'inline-block')
 
+    // remove previously drawn content
     d3.selectAll('.contentLolli')
         .remove()
 
@@ -448,11 +486,13 @@ function showWordsLollipop(chapterAbbrev, color) {
         .domain(topWordsData.map(function(d) { return d.word; }))
         .padding(1);
 
+    // create x axis
     svgLolli.append("g")
         .attr('class', 'contentLolli')
         .attr("transform", `translate(0, ${chartHeight})`)
         .call(d3.axisBottom(x))
     
+    // create y axis
     svgLolli.append("g")
         .attr('class', 'contentLolli')
         .call(d3.axisLeft(y))
@@ -485,10 +525,33 @@ function showWordsLollipop(chapterAbbrev, color) {
             .on("mouseover", showTooltip)
             .on("mousemove", moveTooltip)
             .on("mouseout", hideTooltip)
+
+    // axis legend
+    svgLolli.append('g')
+        .append('text')
+        .attr('class', 'contentLolli')
+        .attr('x', chartWidth/2)
+        .attr('y', heightLolli - margin.top - 5)
+        .attr("text-anchor", "middle")
+        .text('Number of occurrences')
+
+
+    // title
+    svgLolli.append('g')
+        .append('text')
+        .attr('class', 'contentLolli')
+        .attr('x', chartWidth/2)
+        .attr('y', 0)
+        .attr("text-anchor", "middle")
+        .attr('text-decoration', 'underline')
+        .text('Most frequent words in ')
+        .append('tspan')
+            .text(chapterName)    
+            .style('font-style', 'italic')
+            
 }
 
 function showChapterPie() {
-    d3.select('#svgLolli').style('display', 'none')
     var resultWord = document.getElementById('resultWord').innerHTML
     var entryData = lexiconData.filter(function(d) {return d.lexicon_word == resultWord})
 
@@ -566,7 +629,7 @@ function showChapterPie() {
     d3.selectAll('g.arc')
         .remove()
 
-    var radius = Math.min(widthPie, heightPie) / 2
+    var radius = Math.min(widthPie - marginPie.left, heightPie - marginPie.top) / 2
     
     var color = d3.scaleOrdinal()
         .range(d3.schemeTableau10);
@@ -584,6 +647,7 @@ function showChapterPie() {
         .append("g")
             .attr("class", "arc");
     
+    // draw pie chart sections
     g.append("path")
         .attr('id', function(d) {return d.data.chapterAbbrev})
         .attr("d", arc)
@@ -592,6 +656,33 @@ function showChapterPie() {
         .on("mousemove", moveTooltip)
         .on("mouseout", hideTooltip)
 
+    // title
+    svgPie.append('text')
+        .attr('x', 0)
+        .attr('y', -(heightPie)/2)
+        .attr('text-anchor', 'middle')
+        .attr('text-decoration', 'underline')
+        .text('Word occurrences in Manuscript chapters')
+
+    // make the lollipop SVG visible
+    d3.select('#svgLolli')
+        .style('display', 'inline-block')
+
+    // remove previously drawn lollipop chart elements
+    d3.selectAll('#svgLolli > g > g')
+        .remove()
+
+    // show message in place of lollipop chart
+    svgLolli.append('text')
+        .attr('class', 'contentLolli')
+        .attr('x', widthLolli/2 - marginLolli.left)
+        .attr('y', heightLolli/2 - marginLolli.top)
+        .attr('text-anchor', 'middle')
+        .attr('font-style', 'italic')
+        .append('tspan')
+        .text('Click on a section of the pie chart')
+
+    // show lollipop chart when clicking on a section of the pie chart
     d3.selectAll('path')
         .on('click', function(d) {
             clicked = d3.select(this)
@@ -853,7 +944,7 @@ function showYearHistogram() {
                         return chartHeight - y(d.count)
                     }
                 })
-                .attr('fill', d3.schemeTableau10[i])
+                .attr('fill', etymologyList[i].color)
                 .on("mouseover", showTooltip)
                 .on("mousemove", moveTooltip)
                 .on("mouseout", hideTooltip)
@@ -865,7 +956,7 @@ function showYearHistogram() {
             .append("g")
     
         legend.append("rect")
-            .attr("fill", d3.schemeTableau10[i])
+            .attr("fill", etymologyList[i].color)
             .attr("width", 20)
             .attr("height", 20)
             .attr("y", i * 30)
@@ -879,7 +970,33 @@ function showYearHistogram() {
             .text(etymologyList[i].name);
     }
 
+    // x axis legend
+    svgHisto.append('g')
+        .append('text')
+        .attr('x', chartWidth/2)
+        .attr('y', height - margin.top + 10)
+        .attr("text-anchor", "middle")
+        .text('Years (by range of 50 years)')
+
+    // y axis legend
+    svgHisto.append('g')
+        .append('text')
+        .attr("transform", "rotate(-90)")
+        // inverted x and y because of rotation (x: height, y: width)
+        .attr('y', 0 + 20)
+        .attr('x', 0 - height/2)
+        .attr("text-anchor", "middle")
+        .text(function() {
+            if (weightedBool) {return 'Frequency (in %)' }
+            else {
+                if (occurrencesBool) {return 'Number of occurrences'}
+                else {return 'Number of words'}
+            }
+        })
+
+    // if none of the etymology is selected
     if (etymologySelectedOptionsHisto.length < 1) {
+        // do not display tooltips
         d3.selectAll('.tooltip')
             .remove()
         
@@ -923,7 +1040,9 @@ function showCategoryBarChart() {
     etymologyList.forEach(etymology => {
         abbrev = etymology.abbrev
         name = etymology.name
+        color = etymology.color
 
+        // if the occurrences option is selected
         if (occurrencesBarChartBool) {
             if (abbrev == 'all') {
                 var count = d3.sum(categoryData, function(d) {return +d.occurrences})
@@ -931,6 +1050,7 @@ function showCategoryBarChart() {
                 var filteredData = categoryData.filter(function(d) {return d[abbrev] == 1})
                 var count = d3.sum(filteredData, function(d) {return +d['occurrences']})
             }
+        // if the words option is selected
         } else {
             if (abbrev == 'all') {
                 var count = categoryData.length
@@ -941,9 +1061,11 @@ function showCategoryBarChart() {
         etymologyBarChartData.push({
             count: count,
             label: name,
+            color: color,
         })
     })
 
+    // function to sort the bar chart from max to min rect
     function compare(a, b) {
         const countA = a.count
         const countB = b.count
@@ -956,10 +1078,7 @@ function showCategoryBarChart() {
         }
         return comparison * -1;
     }
-
-    console.log(etymologyBarChartData)
     etymologyBarChartData.sort(compare)
-    console.log(etymologyBarChartData)
 
     // initialize chart variables
     var chartHeight = height - margin.bottom
@@ -968,6 +1087,7 @@ function showCategoryBarChart() {
     var delay = 200
     var yMax = d3.max(etymologyBarChartData, function(d) {return +d.count})
 
+    // remove previously drawn bar chart elements
     d3.selectAll('#categoryBarChart > svg > g')
         .remove()
 
@@ -1000,7 +1120,7 @@ function showCategoryBarChart() {
             .attr('width', x.bandwidth())
             .attr('y', y(0))
             .attr('x', d => x(d.label))
-            .style('fill', d=> bar_color(d.label))
+            .style('fill', d=> d.color)
 
     // add x axis
     svgBarChart.append('g')
@@ -1039,23 +1159,40 @@ function showCategoryBarChart() {
                 .duration(duration)
                 .delay((d,i) => {return(i*delay + duration)})
                 .attr('fill-opacity', 1)
+    
+    // y axis legend
+    svgBarChart.append('g')
+        .append('text')
+        .attr("transform", "rotate(-90)")
+        // inverted x and y because of rotation (x: height, y: width)
+        .attr('y', 0 + 20)
+        .attr('x', 0 - height/2)
+        .attr("text-anchor", "middle")
+        .text(function() {
+            if (occurrencesBool) {return 'Number of occurrences'}
+            else {return 'Number of words'}
+        })
 
+    // if none of the selectable options is selected
     if (chapterSelectedOptions.length < 1 || etymologySelectedOptionsBar.length < 1) {
+        // remove bar and text from chart
         svgBarChart.selectAll('.textBar')
             .remove()
-
         svgBarChart.selectAll('.rectBar')
             .remove()
         
+        // create the blur effect
         svgBarChart.append('filter')
             .attr('id', 'blur')
             .append('feGaussianBlur')
                 .attr('in', 'SourceGraphic')
                 .attr('stdDeviation', 3)
         
+        // apply the blur effect to all elements of the bar chart SVG
         svgBarChart.selectAll('g')
             .attr('filter', 'url(#blur)')
         
+        // display a warning message on top of the chart
         svgBarChart.append('g')
             .append('text')
             .attr('x', width/2)
@@ -1090,13 +1227,15 @@ function displaySearchResult() {
                         "<th>Word</th>" +
                         "<th>Year range</th>" +
                         "<th>Etymology</th>" +
-                        "<th>Appears in</th>" +
+                        "<th>Occurrences</th>" +
+                        "<th>In</th>" +
                         "<th>MED entry</th>" +
                     "</tr>" +
                     "<tr>" +
                         "<td>" + entryData.lexiconWord + "</td>" +
                         "<td>" + entryData.yearRange + "</td>" +
                         "<td>" + entryData.wordEtymology + "</td>" +
+                        "<td>" + entryData.occurrences + "</td>" +
                         "<td>" + entryData.wordChapters + "</td>" +
                         "<td><a href=" + entryData.medLink + " target='_blank'>" + entryData.medWord + "</td>" +
                     "</tr>" +
@@ -1154,6 +1293,7 @@ function getEntryData(lexiconEntry) {
     // get the word form, year range, MED word, web link to the MED entry, and etymology of the lexicon entry
     lexiconWord = '<span id="resultWord">' + lexiconEntry.lexicon_word + '</span>'
     yearRange = '<span id="resultYearFrom">' + lexiconEntry.year_from_1 + '</span>' + " - " + '<span id="resultYearTo">' + entry.year_to_1 + '</span>'
+    occurrences = '<span id="">' + lexiconEntry.occurrences + '</span'
     medWord = lexiconEntry.med_word
     medLink = "https://quod.lib.umich.edu/m/middle-english-dictionary/dictionary/MED" + lexiconEntry.med_id
     wordEtymology = "Unknown etymology"
@@ -1177,7 +1317,7 @@ function getEntryData(lexiconEntry) {
         title_short = chapterTitle.chapter_abbrev
         title_full = chapterTitle.chapter_title
         if (wordNbrChapters > 1) {
-            wordChapters = wordNbrChapters + " chapters of Manuscript"
+            wordChapters = wordNbrChapters + " chapters"
         } else {
             if (lexiconEntry[title_short] == 1) {
                 if (wordChapters == "") {
@@ -1194,6 +1334,7 @@ function getEntryData(lexiconEntry) {
         yearRange: yearRange,
         medWord: medWord,
         medLink: medLink,
+        occurrences: occurrences,
         wordEtymology: wordEtymology,
         wordChapters: wordChapters,
         wordNbrChapters: wordNbrChapters,
