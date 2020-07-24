@@ -15,6 +15,7 @@ const marginLolli = {top: 20, right: 30, bottom: 50, left: 50};
 var weightedBool = false;
 var occurrencesHistoBool = false;
 var occurrencesBarChartBool = false;
+var compositionYearBool = false;
 
 // initialize empty arrays
 var lexiconData = [];
@@ -61,26 +62,38 @@ const svgBarChart = d3.select('#categoryBarChart')
     .attr('width', width)
     .attr('height', height);
 
+// create svg object for year histogram
+const svgScatter = d3.select('#yearScatterPlot')
+    .append('svg')
+        .attr("width", width)
+        .attr('height', height);
+
 // initialize constant variables
 const frenchAbbrevList = ['AF', 'AN', 'CF', 'F', 'MF', 'MnF', 'NF', 'OF', 'ONF', 'OProv.', 'Prov.']
 const latinAbbrevList = ['AL', 'CL', 'L', 'Latinate', 'LL', 'ML', 'VL', 'MnL (16th cent.)', 'pseudo-Latin']
+const englishAbbrevList = ['A', 'EM', 'K', 'LOE', 'Merc.', 'M', 'ME', 'NM', 'N', 'nEM', 'NWM', 'Nhb.', 'OE', 'OK', 'ONhb.', 'S', 'SE', 'SEM', 'SM', 'SWM', 'SW', 'Western', 'WM', 'WS']
+const scandinavianAbbrevList = ['Dan.', 'Icel.', 'Norw.', 'ODan.', 'OI', 'ON', 'ONorw.', 'OSwed.', 'Scand.', 'Swed.']
+
 const etymologyCategoryLabels = [
-    {abbrev:'french_etymology', name: 'French-based etymology', color: '#bab0ab'},
-    {abbrev:'latin_etymology', name: 'Latin-based etymology', color: '#4e79a7'},
-    {abbrev:'other_etymology', name: 'Other etymology', color: '#f28e2c'},
-    {abbrev:'unknown_etymology', name: 'Unknown etymology', color: '#e15759'}
+    {abbrev:'french_etymology', name: 'French-based etymology', color: 'rgb(186, 176, 171)'},
+    {abbrev:'latin_etymology', name: 'Latin-based etymology', color: 'rgb(78, 121, 167)'},
+    {abbrev:'english_etymology', name: 'English-based etymology', color: 'rgb(242, 142, 44)'},
+    {abbrev:'scandinavian_etymology', name: 'Scandinavian-based etymology', color: 'rgb(225, 87, 89)'},
+    {abbrev:'other_etymology', name: 'Other etymology', color: 'rgb(118, 178, 183)'},
+    {abbrev:'unknown_etymology', name: 'Unknown etymology', color: 'rgb(89, 161, 79)'}
 ];
 
 const defaultEtymologySelectedOptions = [
-    {abbrev: 'all', name: 'All etymologies', color: '#76b7b2'},
+    {abbrev: 'all', name: 'All etymologies', color: 'rgb(237, 201, 73)'},
 ];
 var etymologySelectedOptionsHisto = defaultEtymologySelectedOptions;
 var etymologySelectedOptionsBar = etymologyCategoryLabels;
 
 const defaultChapterSelectedOptions = [
-    {chapter_abbrev: 'arthur', chapter_title: "Of Arthour & of Merlin"}
+    {chapter_abbrev: 'abc', chapter_title: "Alphabetical Praise of Women"}
 ];
 var chapterSelectedOptions = defaultChapterSelectedOptions;
+var chapterSelectedOptionScatter = defaultChapterSelectedOptions
 
 function setup () {
 	// Charger les données (Attention: opération asynchrone !)
@@ -95,6 +108,7 @@ function loadData() {
         d3.csv('data/med_merge_lexicon_chapters_final_v2.csv'),
         d3.csv('data/med_etymologies.csv'),
         d3.csv('data/chapters_title.csv'),
+        d3.csv('data/all_texts_merged.csv'),
     ]).then(function(files){
         onDataLoaded(files)
     })
@@ -107,6 +121,7 @@ function onDataLoaded(data) {
     lexiconData = data[0]
     etymologyData = data[1]
     chapterTitleData = data[2]
+    allChaptersTextData = data[3]
 
     // create words list for 
     lexiconData.forEach(entry => {
@@ -129,6 +144,7 @@ function onDataLoaded(data) {
     populateEtymologyOptionsListHisto()
     populateEtymologyOptionsListBar()
     populateChapterOptionList()
+    populateChapterOptionListScatter()
 
     showYearHistogram()
     optionsYearHistogram()
@@ -139,7 +155,8 @@ function onDataLoaded(data) {
     showWordsLollipop()
     d3.select('#svgLolli').style('display', 'none')
 
-    showEtymologyStacked()
+    showYearScatterPlot()
+    optionsYearScatterPlot()
 }
 
 function populateEtymologyOptionsListHisto() {
@@ -168,11 +185,14 @@ function populateEtymologyOptionsListHisto() {
         if (etymologySize < 1) {
             continue;   
         }
-
         if (frenchAbbrevList.includes(abbrev)) {
             group = 'French-based'
         } else if (latinAbbrevList.includes(abbrev)) {
             group = 'Latin-based'
+        } else if (englishAbbrevList.includes(abbrev)) {
+            group = 'English-based'
+        } else if (scandinavianAbbrevList.includes(abbrev)) {
+            group = 'Scandinavian-based'
         } else {
             group ='Other'
         }
@@ -235,6 +255,10 @@ function populateEtymologyOptionsListBar() {
             group = 'French-based'
         } else if (latinAbbrevList.includes(abbrev)) {
             group = 'Latin-based'
+        } else if (englishAbbrevList.includes(abbrev)) {
+            group = 'English-based'
+        } else if (scandinavianAbbrevList.includes(abbrev)) {
+            group = 'Scandinavian-based'
         } else {
             group ='Other'
         }
@@ -264,6 +288,26 @@ function populateEtymologyOptionsListBar() {
     // add the etymologies as options for all etymology select fields
     select.options.add(etymologyOptions)
     
+}
+
+function populateChapterOptionListScatter() {
+    // initialize etymology options selection
+    var select = tail.select("#selectChapterScatter", {
+        placeholder: 'Select the poems',
+        search: true,
+        sortItems: 'ASC',
+    } );
+
+    chapterOptions = {}
+    for (let i = 0; i < chapterTitleData.length; i++) {
+        const chapter = chapterTitleData[i];
+        abbrev = chapter.chapter_abbrev
+        title = chapter.chapter_title
+        chapterOptions[abbrev] = {value: title}
+    }
+
+    // add the etymologies as options
+    select.options.add(chapterOptions)
 }
 
 function populateChapterOptionList() {
@@ -388,6 +432,38 @@ function optionsCategoryBarChart() {
                 occurrencesBarChartBool = true
             }
             showCategoryBarChart()
+        })
+}
+
+function optionsYearScatterPlot() {
+    // update scatter plot when selecting a poem
+    d3.select('#selectChapterScatter')
+        .on('change', function(d) {
+            chapterSelectedOptionScatter = []
+            var options = Array.from(this.selectedOptions)
+
+            options.forEach(option => {
+                abbrev = option.value
+                title = option.text
+
+                var selectedOption = {chapter_abbrev: abbrev, chapter_title: title}
+                chapterSelectedOptionScatter.push(selectedOption)
+            })
+
+            showYearScatterPlot()
+        })
+
+    // update scatter plot when changing the option of showing count or frequency of values
+    d3.selectAll('[name="manuscript-composition-year"]')
+        .on('change', function() {
+            var compositionYearCheck = document.getElementById('radio-composition-year')
+
+            if (compositionYearCheck.checked) {
+                compositionYearBool = true
+            } else {
+                compositionYearBool = false
+            }
+            showYearScatterPlot()
         })
 }
 
@@ -708,7 +784,7 @@ function showYearHistogram() {
 
     //
     histogramData.forEach(entry => {
-        entry.year = (+entry.year_from_1 + +entry.year_to_1) / 2
+        entry.year = (+entry.earliest_year_from + +entry.earliest_year_to) / 2
     })
     // to find min that is not 0: use of constant Infinity, since Math.min(Infinity, someNumber) always return someNumber
     var minYear = d3.min(histogramData, function(d) {return +d.year || Infinity;})
@@ -1278,22 +1354,108 @@ function showCategoryBarChart() {
     }
 }
 
-function showEtymologyStacked() {
-    chapterTitleData.forEach(chapter => {
-        chapterAbbrev = chapter.chapter_abbrev
-        chapterTitle = chapter.chapter_title
-        dataFilteredByChapter = lexiconData.filter(function(d) {return d[chapterAbbrev] == 1})
-        
-        etymologyData.forEach(etymology => {
-            etymologyAbbrev = etymology.language_abbrev
-            etymologyName = etymology.language_name
-            dataFilteredByEtymology = dataFilteredByChapter.filter(function(d) {return d[etymologyAbbrev] == 1})
-            
-            count = dataFilteredByEtymology.length
-            occurrences = d3.sum(dataFilteredByEtymology, function(d) {return d[chapterAbbrev + '_occurrences']})
-            //console.log(chapterTitle, etymologyName, count, occurrences)
+function showYearScatterPlot() {
+    var chapterAbbrev = chapterSelectedOptionScatter[0]['chapter_abbrev']
+    var chapterTitle = chapterSelectedOptionScatter[0]['chapter_title']
+
+    // initialize chart variables
+    var chartHeight = height - margin.bottom
+    var chartWidth = width - margin.right
+    console.log(chartHeight)
+
+    var chapterTextData = allChaptersTextData.filter(function(d) {return d['text_name'] == chapterAbbrev})
+    var filteredChapterTextData = chapterTextData.filter(function(d) {return d['french_etymology'] == 1})
+    console.log(filteredChapterTextData.length)
+
+    var yearScatterPlotData = []
+    filteredChapterTextData.forEach(word => {
+        var idInText = word['id_in_text']
+
+        if (compositionYearBool) {
+            if (word['year_2_from'] > 0) {
+                var yearFrom = word['year_2_from']
+                var yearTo = word['year_2_to']
+            } else {
+                var yearFrom = word['year_1_from']
+                var yearTo = word['year_1_to']
+            }
+        } else {
+            var yearFrom = word['year_1_from']
+            var yearTo = word['year_1_to']
+        }
+
+        yearScatterPlotData.push({
+            idInText: idInText,
+            yearFrom: yearFrom,
+            yearTo: yearTo,
         })
     })
+
+    var xMax = d3.max(yearScatterPlotData, function(d) {return +d.idInText})
+    var yMax = d3.max(yearScatterPlotData, function(d) {return +d.yearTo})
+    var yMin = d3.min(yearScatterPlotData, function(d) {return +d.yearFrom || Infinity})
+    console.log(xMax, yMin, yMax)
+
+    // remove previously drawn bar chart elements
+    d3.selectAll('#yearScatterPlot > svg > g')
+        .remove()
+
+    // create horizontal scale
+    var x = d3.scaleLinear()
+        .domain([0 - xMax*0.01, xMax*1.01])
+        .range([margin.left, chartWidth]);
+
+    // create vertical scale
+    var y = d3.scaleLinear()
+        .domain([yMin-25, yMax])
+        .range([chartHeight, margin.top])
+        .interpolate(d3.interpolateRound);
+
+    svgScatter.append("g")
+        .attr("transform", `translate(0, ${chartHeight})`)
+        .call(d3.axisBottom(x));
+    
+    svgScatter.append("g")
+        .attr('transform', `translate(${margin.left}, 0)`)
+        .call(d3.axisLeft(y));
+
+    // Add dots
+    svgScatter.append('g')
+        .selectAll("dot")
+        .data(yearScatterPlotData)
+        .enter()
+        .append("rect")
+            .attr("x", function (d) { return x(d.idInText); } )
+            .attr("y", function (d) { return y(d.yearTo)} )
+            .attr('height', function(d) {
+                if (d.yearFrom == d.yearTo) {return 3}
+                else {return y(d.yearFrom) - y(d.yearTo)}
+            })
+            .attr("width", 1.5)
+            .style("fill", "rgb(225, 87, 89)")
+
+    // x axis legend
+    svgScatter.append('g')
+        .append('text')
+        .attr('class', 'chartLegend')
+        .attr('x', chartWidth/2)
+        .attr('y', height - margin.top + 10)
+        .attr("text-anchor", "middle")
+        .text('Word position in the poem')
+
+    // y axis legend
+    svgScatter.append('g')
+        .append('text')
+        .attr('class', 'chartLegend')
+        .attr("transform", "rotate(-90)")
+        // inverted x and y because of rotation (x: height, y: width)
+        .attr('y', 0 + 20)
+        .attr('x', 0 - height/2)
+        .attr("text-anchor", "middle")
+        .text(function() {
+            if (compositionYearBool) {return 'Year of composition' }
+            else {return 'Year of manuscript'}
+        })
 }
 
 function displaySearchResult() {
@@ -1385,7 +1547,7 @@ function getStopWords() {
 function getEntryData(lexiconEntry) {
     // get the word form, year range, MED word, web link to the MED entry, and etymology of the lexicon entry
     lexiconWord = '<span id="resultWord">' + lexiconEntry.lexicon_word + '</span>'
-    yearRange = '<span id="resultYearFrom">' + lexiconEntry.year_from_1 + '</span>' + " - " + '<span id="resultYearTo">' + entry.year_to_1 + '</span>'
+    yearRange = '<span id="resultYearFrom">' + lexiconEntry.earliest_year_from + '</span>' + " - " + '<span id="resultYearTo">' + entry.earliest_year_to + '</span>'
     occurrences = '<span id="">' + lexiconEntry.occurrences + '</span'
     medWord = lexiconEntry.med_word
     medLink = "https://quod.lib.umich.edu/m/middle-english-dictionary/dictionary/MED" + lexiconEntry.med_id
