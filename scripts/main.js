@@ -73,6 +73,7 @@ const frenchAbbrevList = ['AF', 'AN', 'CF', 'F', 'MF', 'MnF', 'NF', 'OF', 'ONF',
 const latinAbbrevList = ['AL', 'CL', 'L', 'Latinate', 'LL', 'ML', 'VL', 'MnL (16th cent.)', 'pseudo-Latin']
 const englishAbbrevList = ['A', 'EM', 'K', 'LOE', 'Merc.', 'M', 'ME', 'NM', 'N', 'nEM', 'NWM', 'Nhb.', 'OE', 'OK', 'ONhb.', 'S', 'SE', 'SEM', 'SM', 'SWM', 'SW', 'Western', 'WM', 'WS']
 const scandinavianAbbrevList = ['Dan.', 'Icel.', 'Norw.', 'ODan.', 'OI', 'ON', 'ONorw.', 'OSwed.', 'Scand.', 'Swed.']
+const stopwordsMiddleEnglish = ['ac','afore','ake','an','because','ek','fore','for','forthi','whan','whanne','whilis','if','yf','yif','yiff','yit','yet','and','or','any','but','a','y','ne','no','not','nor','nat','however','o','than','n','nn','nnn','to','with','wyth','at','as','of','off','from','on','before','by','after','about','above','across','among','against','below','between','during','into','in','out','over','under','abord','aboven','afore','aftir','bi','bifor','bisyde','bitwixten','byfore','bytwene','down','doun','embe','fra','ine','mid','sanz','tyll','umbe','vnto','vpon','withouten','with','wth','wtout','can','cannot',"can't",'t','could','did','do','does','wyl','will','would','haven','hast','haþ','havende','hadde','haddest','hadden','had',"hadn't",'has',"hasn't",'hasn','have',"haven't",'haven','having','be','ben','been','am','art','is','ys','aren','are',"aren't",'bende',"isn't",'isn','wæs','was',"wasn't",'wasn','weren','were',"weren't",'þe','the','þat','þenne','þis','whiche','which','while','who','whom','what','when','where','why','that',"that's",'s','there','ther','þer',"there's",'these','this','those','boþe','thilke','eiþer','either','neither','al','all','also','ane','ic','ich','i',"i'd",'d',"i'll",'ll',"i'm",'m',"i've",'ve','me','mi','my','minen','min','mire','minre','myself','þu','þou','tu','þeou','thi','you','þe','þi','ti','þin','þyn','þeself',"you'd","you'll","you're",'re',"you've",'your','yours','yourself','yourselves','thee','thy','thou','ye','thine','he',"he'd","he'll","he's",'she','sche',"she'd","she'll","she's",'her','heo','hie','hies','hire','hir','hers','hio','heore','herself','him','hine','hisse','hes','himself','his','hys','hym','hit','yt','it','its',"it's",'tis','twas','itself','þay','youre','hyr','hem','we',"we'd","we'll","we're","we've",'us','ous','our','ure','ures','urne','ours','oures','ourselves','their','theirs','them','themselves','thai','thei','they',"they'd","they'll","they're","they've",'whan']
 
 const etymologyCategoryLabels = [
     {abbrev:'french_etymology', name: 'French-based etymology', color: 'rgb(186, 176, 171)'},
@@ -105,7 +106,7 @@ function loadData() {
 	// Une fois les données chargées, la promise sera résolue (.then) et
     // le callback `onDataLoaded` sera appelé en passant les données en paramètre
     Promise.all([
-        d3.csv('data/med_merge_lexicon_chapters_final_v2.csv'),
+        d3.csv('data/med_merge_lexicon_ota_final_v2.csv'),
         d3.csv('data/med_etymologies.csv'),
         d3.csv('data/chapters_title.csv'),
         d3.csv('data/all_texts_merged.csv'),
@@ -154,6 +155,7 @@ function onDataLoaded(data) {
     
     showWordsLollipop()
     d3.select('#svgLolli').style('display', 'none')
+    d3.select('#note2').style('display', 'none')
 
     showYearScatterPlot()
     optionsYearScatterPlot()
@@ -469,7 +471,8 @@ function optionsYearScatterPlot() {
 
 function showWordsLollipop(chapterAbbrev, color) {
     chapterOccurrences = chapterAbbrev + '_occurrences'
-    stopWords = getStopWords()
+    //stopWords = getStopWords()
+    stopWords = stopwordsMiddleEnglish
     var chapterName
 
     chapterTitleData.forEach(chapter => {
@@ -623,6 +626,12 @@ function showWordsLollipop(chapterAbbrev, color) {
         .append('tspan')
             .text(chapterName)    
             .style('font-style', 'italic')
+        .append('a')
+            .attr('href', '#note2')
+            .attr('baseline-shift', 'super')
+            .text('2')
+            .style('font-style', 'normal')
+            .style('font-size', 'smaller')
             
 }
 
@@ -742,6 +751,9 @@ function showChapterPie() {
 
     // make the lollipop SVG visible
     d3.select('#svgLolli')
+        .style('display', 'inline-block')
+    
+    d3.select('#note2')
         .style('display', 'inline-block')
 
     // remove previously drawn lollipop chart elements
@@ -889,7 +901,7 @@ function showYearHistogram() {
                 // if showing by number of occurrences (tokens)
                 if (occurrencesHistoBool) {
                     // compute the sum of occurrences of the bin
-                    binSize = d3.sum(bin, function(d) {return +d.occurrences})
+                    binSize = d3.sum(bin, function(d) {return +d.occurrences_manuscript})
                 // if showing by number of words (types)
                 } else {
                     // get the size value of the bin
@@ -958,10 +970,11 @@ function showYearHistogram() {
 
     // show tooltip when mouse is over a bin
     var showTooltip = function(d) {
+        var tooltipString = `${d.etymology}</br>Year range: ${d.x0} - ${d.x1}</br>`
         if (weightedBool) {
-            tooltipString = `${d.etymology}</br>Year range: ${d.x0} - ${d.x1}</br>Frequency: ${Math.round(d.frequency * 100)}%`
+            tooltipString = tooltipString + `Frequency: ${Math.round(d.frequency * 100)}%`
         } else {
-            tooltipString = `${d.etymology}</br>Year range: ${d.x0} - ${d.x1}</br>Count: ${d.count}`
+            tooltipString = tooltipString + `Count: ${d.count}`
         }
         tooltip
             .style('visibility', 'visible')
@@ -992,6 +1005,18 @@ function showYearHistogram() {
         d3.select(this)
             .style("stroke", 'none')
             .style("opacity", 1)
+    }
+
+    var downloadBinData = function(d) {
+        if (confirm(`Download the list of words of ${d.etymology} (${d.x0}-${d.x1}) as .csv?`)) {
+            let csv = '';
+            let header = Object.keys(d[0]).join(',');
+            let values = d.map(o => Object.values(o).join(',')).join('\n');
+            var filename = `list_${d.etymology}_${d.x0}-${d.x1}`
+
+            csv += header + '\n' + values;
+            downloadCSV(csv, filename)   
+        }
     }
 
     // set the bin width to avoid having a slim first and last bin 
@@ -1030,6 +1055,7 @@ function showYearHistogram() {
                 .on("mouseover", showTooltip)
                 .on("mousemove", moveTooltip)
                 .on("mouseout", hideTooltip)
+                .on('click', downloadBinData)
     }
 
     var legend = svgHisto.selectAll(".legend")
@@ -1125,26 +1151,35 @@ function showCategoryBarChart() {
         name = etymology.name
         color = etymology.color
 
+        var barData
+
         // if the occurrences option is selected
         if (occurrencesBarChartBool) {
             if (abbrev == 'all') {
                 var count = d3.sum(categoryData, function(d) {return +d.occurrences})
+                barData = categoryData
             } else {
                 var filteredData = categoryData.filter(function(d) {return d[abbrev] == 1})
                 var count = 0
                 chapterList.forEach(chapter => {
                     count = count + d3.sum(filteredData, function(d) {return +d[chapter.chapter_abbrev + '_occurrences']})
                 })
+                barData = filteredData
             }
         // if the words option is selected
         } else {
             if (abbrev == 'all') {
                 var count = categoryData.length
+                barData = categoryData
             } else {
-                var count = d3.sum(categoryData, function(d) {return +d[abbrev]})
+                var filteredData = categoryData.filter(function(d) {return d[abbrev] == 1})
+                var count = filteredData.length
+                //var count = d3.sum(categoryData, function(d) {return +d[abbrev]})
+                barData = filteredData
             }
         }
         etymologyBarChartData.push({
+            barData,
             count: count,
             label: name,
             color: color,
@@ -1217,6 +1252,18 @@ function showCategoryBarChart() {
             .style("opacity", 1)
     }
 
+    var downloadBarData = function(d) {
+        if (confirm(`Download the list of words of ${d.label} for ${chapterList.length} poems as .csv?`)) {
+            let csv = '';
+            let header = Object.keys(d.barData[0]).join(',');
+            let values = d.barData.map(o => Object.values(o).join(',')).join('\n');
+            var filename = `list_${d.label}_${chapterList.length}_poems`
+
+            csv += header + '\n' + values;
+            downloadCSV(csv, filename)   
+        }
+    }
+
     // initialize chart variables
     var chartHeight = height - margin.bottom
     var chartWidth = width - margin.right
@@ -1256,6 +1303,7 @@ function showCategoryBarChart() {
             .on("mouseover", showTooltip)
             .on("mousemove", moveTooltip)
             .on("mouseout", hideTooltip)
+            .on('click', downloadBarData)
 
 
     // add x axis. If there are more than 6 bars, do not display ticks
@@ -1458,6 +1506,23 @@ function showYearScatterPlot() {
         })
 }
 
+function downloadCSV(csvString, filename) {
+    var blob = new Blob([csvString]);
+
+    if (window.navigator.msSaveOrOpenBlob){
+        window.navigator.msSaveBlob(blob, filename + ".csv");
+    } else {
+        var a = window.document.createElement("a");
+        a.href = window.URL.createObjectURL(blob, {
+            type: "text/plain"
+        });
+        a.download = filename + ".csv";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+}
+
 function displaySearchResult() {
     var searchValue = document.getElementById("searchWord").value
     // if a non-empty string has been submitted
@@ -1501,6 +1566,7 @@ function displaySearchResult() {
             document.getElementById("searchResult").innerHTML = "Please enter a word used in Auchinleck Manuscript"
             d3.select('#svgPie').style('display', 'none')
             d3.select('#svgLolli').style('display', 'none')
+            d3.select('#note2').style('display', 'none')
         }
     } else {
         // hide the DIV where the search result appears
@@ -1510,6 +1576,7 @@ function displaySearchResult() {
         }
         d3.select('#svgPie').style('display', 'none')
         d3.select('#svgLolli').style('display', 'none')
+        d3.select('#note2').style('display', 'none')
     }
 }
 
@@ -1548,7 +1615,7 @@ function getEntryData(lexiconEntry) {
     // get the word form, year range, MED word, web link to the MED entry, and etymology of the lexicon entry
     lexiconWord = '<span id="resultWord">' + lexiconEntry.lexicon_word + '</span>'
     yearRange = '<span id="resultYearFrom">' + lexiconEntry.earliest_year_from + '</span>' + " - " + '<span id="resultYearTo">' + entry.earliest_year_to + '</span>'
-    occurrences = '<span id="">' + lexiconEntry.occurrences + '</span'
+    occurrences = '<span id="">' + lexiconEntry.occurrences_manuscript + '</span'
     medWord = lexiconEntry.med_word
     medLink = "https://quod.lib.umich.edu/m/middle-english-dictionary/dictionary/MED" + lexiconEntry.med_id
     wordEtymology = "Unknown etymology"
