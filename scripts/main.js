@@ -109,7 +109,7 @@ function loadData() {
         d3.csv('data/med_merge_lexicon_ota_final_v2.csv'),
         d3.csv('data/med_etymologies.csv'),
         d3.csv('data/chapters_title.csv'),
-        d3.csv('data/all_texts_merged.csv'),
+        d3.csv('data/all_texts_merged_v3.csv'),
     ]).then(function(files){
         onDataLoaded(files)
     })
@@ -1409,7 +1409,8 @@ function showYearScatterPlot() {
     // initialize chart variables
     var chartHeight = height - margin.bottom
     var chartWidth = width - margin.right
-    console.log(chartHeight)
+    console.log(chartHeight, chartWidth)
+    console.log(margin.left, margin.right, margin.top, margin.bottom)
 
     var chapterTextData = allChaptersTextData.filter(function(d) {return d['text_name'] == chapterAbbrev})
     var filteredChapterTextData = chapterTextData.filter(function(d) {return d['french_etymology'] == 1})
@@ -1418,6 +1419,9 @@ function showYearScatterPlot() {
     var yearScatterPlotData = []
     filteredChapterTextData.forEach(word => {
         var idInText = word['id_in_text']
+        var lexiconWord = word['lexicon_word']
+        var lineMin = word['line_number_min']
+        var lineMax = word['line_number_max']
 
         if (compositionYearBool) {
             if (word['year_2_from'] > 0) {
@@ -1434,15 +1438,68 @@ function showYearScatterPlot() {
 
         yearScatterPlotData.push({
             idInText: idInText,
+            lexiconWord: lexiconWord,
             yearFrom: yearFrom,
             yearTo: yearTo,
+            lineMin: lineMin,
+            lineMax: lineMax,
         })
     })
+    
+    yearScatterPlotData = yearScatterPlotData.filter(function(d) {return d.yearFrom > 0})
 
     var xMax = d3.max(yearScatterPlotData, function(d) {return +d.idInText})
     var yMax = d3.max(yearScatterPlotData, function(d) {return +d.yearTo})
-    var yMin = d3.min(yearScatterPlotData, function(d) {return +d.yearFrom || Infinity})
+    var yMin = d3.min(yearScatterPlotData, function(d) {return +d.yearFrom})
     console.log(xMax, yMin, yMax)
+
+    // create info bubble to display info when overing mouse on ticks
+    var tooltip = d3.select("body")
+        .append("div")
+            .attr("class", "tooltip")
+            .style("position", "absolute")
+            .style("z-index", '10')
+            .style("visibility", "hidden")
+            .style("opacity", 1)
+            .style("background-color", "black")
+            .style("color", "white")
+            .style("border-radius", "5px")
+            .style("padding", "10px")
+
+    // show tooltip when mouse is over a bin
+    var showTooltip = function(d) {
+        var tooltipString = `Word: ${d.lexiconWord}<br>Earliest citation: ${d.yearFrom}-${d.yearTo}<br>Lines in text: ${d.lineMin}-${d.lineMax}`
+        
+        tooltip
+            .style('visibility', 'visible')
+            .html(tooltipString)
+        d3.selectAll('.rectScatter')
+            .style('opacity', 0.6)
+        d3.select(this)
+            .style("stroke", "black")
+            .style('stroke-width', '1px')
+            .style('stroke-opacity', 0)
+            .style("opacity", 1)
+            .style('z-index', '10')
+    }
+
+    // move tooltip when mouse moves over a bin
+    var moveTooltip = function() {
+        tooltip
+            .style("top", (event.pageY-10)+"px")
+            .style("left", (event.pageX + 10) + "px")
+    }
+
+    // hide tooltip when mouse leaves a bin
+    var hideTooltip = function() {
+        tooltip
+            .style("visibility", "hidden")
+        d3.selectAll('.rectScatter')
+            .style('opacity', 1)
+        d3.select(this)
+            .style("stroke", 'none')
+            .style("opacity", 1)
+    }
 
     // remove previously drawn bar chart elements
     d3.selectAll('#yearScatterPlot > svg > g')
@@ -1459,20 +1516,36 @@ function showYearScatterPlot() {
         .range([chartHeight, margin.top])
         .interpolate(d3.interpolateRound);
 
-    svgScatter.append("g")
+    var xAxis = svgScatter.append("g")
         .attr("transform", `translate(0, ${chartHeight})`)
         .call(d3.axisBottom(x));
     
-    svgScatter.append("g")
+    var yAxis = svgScatter.append("g")
         .attr('transform', `translate(${margin.left}, 0)`)
         .call(d3.axisLeft(y));
 
+    // Add a clipPath: everything out of this area won't be drawn.
+    svgScatter.append("defs")
+        .append("SVG:clipPath")
+            .attr("id", "clip")
+            .append("SVG:rect")
+                .attr("width", chartWidth - margin.left)
+                .attr("height", chartHeight)
+                .attr("x", margin.left)
+                .attr("y", 0);
+
+    // Create the scatter variable: where both the circles and the brush take place
+    var scatter = svgScatter.append('g')
+        .attr("clip-path", "url(#clip)")
+
     // Add dots
-    svgScatter.append('g')
+    //svgScatter.append('g')
+    scatter
         .selectAll("dot")
         .data(yearScatterPlotData)
         .enter()
         .append("rect")
+            .attr('class', 'rectScatter')
             .attr("x", function (d) { return x(d.idInText); } )
             .attr("y", function (d) { return y(d.yearTo)} )
             .attr('height', function(d) {
@@ -1481,6 +1554,44 @@ function showYearScatterPlot() {
             })
             .attr("width", 1.5)
             .style("fill", "rgb(225, 87, 89)")
+            .on("mouseover", showTooltip)
+            .on("mousemove", moveTooltip)
+            .on("mouseout", hideTooltip)
+
+    // Set the zoom and Pan features: how much you can zoom, on which part, and what to do when there is a zoom
+    var zoom = d3.zoom()
+        .scaleExtent([1, 20])  // This control how much you can unzoom (x0.5) and zoom (x20)
+        .extent([[margin.left, 0], [chartWidth - margin.left, chartHeight]])
+        .on("zoom", updateChart)
+
+    svgScatter
+        .call(zoom)
+        .on("mousedown.zoom", null)
+    
+
+    // A function that updates the chart when the user zoom and thus new boundaries are available
+    function updateChart() {
+
+        // recover the new scale
+        var newX = d3.event.transform.rescaleX(x);
+        var newY = d3.event.transform.rescaleY(y);
+
+        // update axes with these new boundaries
+        xAxis.call(d3.axisBottom(newX))
+        yAxis.call(d3.axisLeft(newY))
+
+        // update circle position
+        scatter.selectAll("rect")
+            .attr("x", function (d) { return newX(d.idInText); } )
+            .attr("y", function (d) { return newY(d.yearTo)} )
+            .attr('height', function(d) {
+                if (d.yearFrom == d.yearTo) {return 3}
+                else {return newY(d.yearFrom) - newY(d.yearTo)}
+            })
+        
+        console.log(d3.extent(newX.domain()))
+        console.log(d3.extent(newY.domain()))
+    }
 
     // x axis legend
     svgScatter.append('g')
