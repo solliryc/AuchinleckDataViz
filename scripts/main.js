@@ -16,6 +16,7 @@ var weightedBool = false;
 var occurrencesHistoBool = false;
 var occurrencesBarChartBool = false;
 var compositionYearBool = false;
+var yearHistoOption = 'radio-manuscript'
 
 // initialize empty arrays
 var lexiconData = [];
@@ -106,10 +107,10 @@ function loadData() {
 	// Une fois les données chargées, la promise sera résolue (.then) et
     // le callback `onDataLoaded` sera appelé en passant les données en paramètre
     Promise.all([
-        d3.csv('data/med_merge_lexicon_ota_final_v2.csv'),
+        d3.csv('data/med_merge_lexicon_ota_final_v4.csv'),
         d3.csv('data/med_etymologies.csv'),
         d3.csv('data/chapters_title.csv'),
-        d3.csv('data/all_texts_merged_v3.csv'),
+        d3.csv('data/all_texts_merged_v4.csv'),
     ]).then(function(files){
         onDataLoaded(files)
     })
@@ -140,6 +141,13 @@ function onDataLoaded(data) {
         colorEtymology.push(color)
     }
 
+    // add mean years for manuscript, composition and earliest year
+    lexiconData.forEach(entry => {
+        entry.year_1_mean = Math.round((+entry.year_1_from + +entry.year_1_to) / 2);
+        entry.year_2_mean = Math.round((+entry.year_2_from + +entry.year_2_to) / 2);
+        entry.earliest_year_mean = Math.round((+entry.earliest_year_from + +entry.earliest_year_to) / 2);
+    });
+
     autocomplete(document.getElementById("searchWord"), words);
     
     populateEtymologyOptionsListHisto()
@@ -155,7 +163,7 @@ function onDataLoaded(data) {
     
     showWordsLollipop()
     d3.select('#svgLolli').style('display', 'none')
-    d3.select('#note2').style('display', 'none')
+    d3.select('#note3').style('display', 'none')
 
     showYearScatterPlot()
     optionsYearScatterPlot()
@@ -386,6 +394,21 @@ function optionsYearHistogram() {
             })
             showYearHistogram()
         })
+
+    // update histogram when changing the option of showing year of composition or manuscript
+    d3.selectAll('[name="radio-year-histo"]')
+        .on('change', function() {
+            var radios = document.getElementsByName('radio-year-histo')
+            
+            for (var i = 0, length = radios.length; i < length; i++) {
+                if (radios[i].checked) {
+                    yearHistoOption = radios[i].value
+                    break;
+                }
+            }
+
+            showYearHistogram()
+        })
 }
 
 function optionsCategoryBarChart() {
@@ -455,7 +478,7 @@ function optionsYearScatterPlot() {
             showYearScatterPlot()
         })
 
-    // update scatter plot when changing the option of showing count or frequency of values
+    // update scatter plot when changing the option of showing year of composition or manuscript
     d3.selectAll('[name="manuscript-composition-year"]')
         .on('change', function() {
             var compositionYearCheck = document.getElementById('radio-composition-year')
@@ -627,9 +650,9 @@ function showWordsLollipop(chapterAbbrev, color) {
             .text(chapterName)    
             .style('font-style', 'italic')
         .append('a')
-            .attr('href', '#note2')
+            .attr('href', '#note3')
             .attr('baseline-shift', 'super')
-            .text('2')
+            .text('3')
             .style('font-style', 'normal')
             .style('font-size', 'smaller')
             
@@ -753,7 +776,7 @@ function showChapterPie() {
     d3.select('#svgLolli')
         .style('display', 'inline-block')
     
-    d3.select('#note2')
+    d3.select('#note3')
         .style('display', 'inline-block')
 
     // remove previously drawn lollipop chart elements
@@ -794,10 +817,18 @@ function showYearHistogram() {
         });
     });
 
-    //
+    // 
     histogramData.forEach(entry => {
-        entry.year = (+entry.earliest_year_from + +entry.earliest_year_to) / 2
+        if (yearHistoOption == 'radio-manuscript') {
+            entryYear = +entry.year_1_mean
+        } else if (yearHistoOption == 'radio-composition') {
+            entryYear = +entry.year_2_mean
+        } else if (yearHistoOption == 'radio-earliest') {
+            entryYear = +entry.earliest_year_mean
+        }
+        entry.year = entryYear
     })
+
     // to find min that is not 0: use of constant Infinity, since Math.min(Infinity, someNumber) always return someNumber
     var minYear = d3.min(histogramData, function(d) {return +d.year || Infinity;})
     var maxYear = d3.max(histogramData, function(d) {return +d.year})
@@ -825,6 +856,7 @@ function showYearHistogram() {
         yearThreshold.push(yearStep)
         yearStep = yearStep + yearRange
     }
+    console.log(yearThreshold)
 
     d3.selectAll('#yearHistogram > svg > g')
         .remove()
@@ -868,7 +900,7 @@ function showYearHistogram() {
             totalBinsLength = d3.sum(bins, function(d) {return +d.length})
             var totalBinsOccurrences = 0
             bins.forEach(bin => {
-                totalBinsOccurrences = totalBinsOccurrences + d3.sum(bin, function(d) {return +d.occurrences})
+                totalBinsOccurrences = totalBinsOccurrences + d3.sum(bin, function(d) {return +d.occurrences_manuscript})
             })
             
             // for each bin
@@ -876,7 +908,7 @@ function showYearHistogram() {
                 // if showing by number of occurrences (tokens)
                 if (occurrencesHistoBool) {
                     // compute the sum of occurrences of the bin, compute the weighted height of the bin
-                    binOccurrences = d3.sum(bins[j], function(d) {return +d.occurrences})
+                    binOccurrences = d3.sum(bins[j], function(d) {return +d.occurrences_manuscript})
                     binsHeight = binOccurrences / totalBinsOccurrences
                 // if showing by number of words (types)
                 } else {
@@ -1552,7 +1584,7 @@ function showYearScatterPlot() {
                 if (d.yearFrom == d.yearTo) {return 3}
                 else {return y(d.yearFrom) - y(d.yearTo)}
             })
-            .attr("width", 1.5)
+            .attr("width", 1)
             .style("fill", "rgb(225, 87, 89)")
             .on("mouseover", showTooltip)
             .on("mousemove", moveTooltip)
@@ -1560,14 +1592,13 @@ function showYearScatterPlot() {
 
     // Set the zoom and Pan features: how much you can zoom, on which part, and what to do when there is a zoom
     var zoom = d3.zoom()
-        .scaleExtent([1, 20])  // This control how much you can unzoom (x0.5) and zoom (x20)
-        .extent([[margin.left, 0], [chartWidth - margin.left, chartHeight]])
+        .scaleExtent([1, 10])  // This control how much you can unzoom (1) and zoom (x20)
+        .translateExtent([[0, 0], [chartWidth + margin.right, chartHeight + margin.bottom]])
         .on("zoom", updateChart)
 
     svgScatter
         .call(zoom)
-        .on("mousedown.zoom", null)
-    
+        //.on("mousedown.zoom", null)
 
     // A function that updates the chart when the user zoom and thus new boundaries are available
     function updateChart() {
@@ -1580,7 +1611,20 @@ function showYearScatterPlot() {
         xAxis.call(d3.axisBottom(newX))
         yAxis.call(d3.axisLeft(newY))
 
-        // update circle position
+        // get the domain coordinates to find the level of zooming, to increase gradually width of bars
+        xDomain = d3.extent(x.domain())
+        yDomain = d3.extent(y.domain())
+        newXDomain = d3.extent(newX.domain())
+        newYDomain = d3.extent(newY.domain())
+
+        xWidth = xDomain[1] - xDomain[0]
+        yHeight = yDomain[1] - yDomain[0]
+        newXWidth = newXDomain[1] - newXDomain[0]
+        newYHeight = newYDomain[1] - newYDomain[0]
+
+        zoomMagnification = xWidth / newXWidth
+
+        // update bars position
         scatter.selectAll("rect")
             .attr("x", function (d) { return newX(d.idInText); } )
             .attr("y", function (d) { return newY(d.yearTo)} )
@@ -1588,9 +1632,7 @@ function showYearScatterPlot() {
                 if (d.yearFrom == d.yearTo) {return 3}
                 else {return newY(d.yearFrom) - newY(d.yearTo)}
             })
-        
-        console.log(d3.extent(newX.domain()))
-        console.log(d3.extent(newY.domain()))
+            .attr('width', 1 + (0.5 * zoomMagnification - 0.5) )
     }
 
     // x axis legend
@@ -1677,7 +1719,7 @@ function displaySearchResult() {
             document.getElementById("searchResult").innerHTML = "Please enter a word used in Auchinleck Manuscript"
             d3.select('#svgPie').style('display', 'none')
             d3.select('#svgLolli').style('display', 'none')
-            d3.select('#note2').style('display', 'none')
+            d3.select('#note3').style('display', 'none')
         }
     } else {
         // hide the DIV where the search result appears
@@ -1687,7 +1729,7 @@ function displaySearchResult() {
         }
         d3.select('#svgPie').style('display', 'none')
         d3.select('#svgLolli').style('display', 'none')
-        d3.select('#note2').style('display', 'none')
+        d3.select('#note3').style('display', 'none')
     }
 }
 

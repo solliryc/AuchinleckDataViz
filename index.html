@@ -37,22 +37,30 @@
             <span class="chartHeading">When did the Manuscript words appear in Middle English language?<sup><a href="#note1">1</a></sup> </span>
             <fieldset>
                 <legend>Choose the options:</legend>
-                <table>
+                <table class="tableOptions">
                     <tr>
                         <td>
                             <select id="selectEtymologyHisto" class="selectEtymology" multiple></select>
                         </td>
                         <td>
                             <input type="radio" name="count-frequency" id="radio-count" value="radio-count" checked>
-                            <label for="radio-count">Count</label>
+                            <label for="radio-count">Count</label><br>
                             <input type="radio" name="count-frequency" id="radio-frequency" value="radio-frequency">
                             <label for="radio-frequency">Frequency</label>
                         </td>
                         <td>
                             <input type="radio" name="words-occurrences" id="radio-words" value="radio-words" checked>
-                            <label for="radio-words">Words</label>
+                            <label for="radio-words">Words</label><br>
                             <input type="radio" name="words-occurrences" id="radio-occurrences" value="radio-occurrences">
                             <label for="radio-occurrences">Occurrences</label>
+                        </td>
+                        <td>
+                            <input type="radio" name="radio-year-histo" id="radio-manuscript-year-histo" value="radio-manuscript" checked>
+                            <label for="radio-manuscript-year-histo">Manuscript year</label><br>
+                            <input type="radio" name="radio-year-histo" id="radio-composition-year-histo" value="radio-composition">
+                            <label for="radio-composition-year-histo">Composition year</label><br>
+                            <input type="radio" name="radio-year-histo" id="radio-earliest-year-histo" value="radio-earliest">
+                            <label for="radio-earliest-year-histo">Earliest year</label>
                         </td>
                     </tr>
                 </table>
@@ -63,7 +71,7 @@
             <span class="chartHeading">How many words are there by etymology?</span>
             <fieldset>
                 <legend>Choose the options:</legend>
-                <table>
+                <table class="tableOptions">
                     <tr>
                         <td>
                             <select id="selectChapter" class="select" multiple></select>
@@ -73,7 +81,7 @@
                         </td>
                         <td>
                             <input type="radio" name="words-occurrences-bar" id="radio-words-bar" value="radio-words" checked>
-                            <label for="radio-words-bar">Words</label>
+                            <label for="radio-words-bar">Words</label><br>
                             <input type="radio" name="words-occurrences-bar" id="radio-occurrences-bar" value="radio-occurrences">
                             <label for="radio-occurrences-bar">Occurrences</label>
                         </td>
@@ -83,11 +91,11 @@
             <span style="font-weight: lighter">Click on a bar to download its associated list of words</span>
         </div>
         <div id="yearScatterPlot">
-            <span class="chartHeading">When did French-based words appear in Middle English language (per poem)?</span>
+            <span class="chartHeading">When did French-based words appear in Middle English language (per poem)? <sup><a href="#note2">2</a></sup></span>
             <fieldset>
                 <legend>Choose the options:</legend>
                 <table>
-                    <tr>
+                    <tr id="scatterOptions">
                         <td>
                             <select id="selectChapterScatter" class="select"></select>
                         </td>
@@ -103,8 +111,9 @@
         </div>
         <div id="notes">
             <span>Notes: <br></span>
-            <span id="note1"><sup>1</sup> The year of apparition of a word in the Middle English language is an estimation based on the year of the earliest citation found in the Middle English Dictionary.</span><br>
-            <span id="note2" style='display: none'><sup>2</sup> The list of most frequent words is filtered to exclude the most common words in Middle English. This stopwords list is provided by the <a href="https://github.com/cltk/cltk/blob/master/cltk/stop/middle_english/stops.py">Classical Language Toolkit (CLTK)</a>.</span>
+            <span id="note1"><sup>1</sup> If the "Manuscript year" option is selected and a word does not have a manuscript date, it is left out of the statistics. This also applies for the "Composition year" option.</span><br>
+            <span id="note2"><sup>2</sup> If the "Manuscript year" option is selected and a word does not have a manuscript date, its earliest composition date is shown. This also applies for the "Composition year" option.</span><br>
+            <span id="note3" style='display: none'><sup>3</sup> The list of most frequent words is filtered to exclude the most common words in Middle English. This stopwords list is provided by the <a href="https://github.com/cltk/cltk/blob/master/cltk/stop/middle_english/stops.py" target="_blank">Classical Language Toolkit (CLTK)</a>.</span>
         </div>
     </div>
     <footer class="footer mt-auto py-3">

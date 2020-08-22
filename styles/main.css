@@ -126,6 +126,9 @@ h1, h2{
 #tableResults tr td:last-of-type {
   border: none;
 }
+.tableOptions td{
+  text-align: left;
+}
 #chapterPie{
   display: inline-block;
 }
