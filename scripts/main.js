@@ -110,7 +110,7 @@ function loadData() {
         d3.csv('data/med_merge_lexicon_ota_final_v4.csv'),
         d3.csv('data/med_etymologies.csv'),
         d3.csv('data/chapters_title.csv'),
-        d3.csv('data/all_texts_merged_v4.csv'),
+        d3.csv('data/all_texts_merged_v5.csv'),
     ]).then(function(files){
         onDataLoaded(files)
     })

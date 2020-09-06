@@ -33,8 +33,31 @@
         <div id="chapterPie"></div>
         <div id="wordsLollipop"></div>
         <div id="etymologyStacked"></div>
+        <div id="categoryBarChart">
+            <span class="chartHeading">What are the etymological connections of the Auchinleck Manuscript’s texts?</span>
+            <fieldset>
+                <legend>Choose the options:</legend>
+                <table class="tableOptions">
+                    <tr>
+                        <td>
+                            <select id="selectChapter" class="select" multiple></select>
+                        </td>
+                        <td>
+                            <select id="selectEtymologyBar" class="selectEtymology" multiple></select>
+                        </td>
+                        <td>
+                            <input type="radio" name="words-occurrences-bar" id="radio-words-bar" value="radio-words" checked>
+                            <label for="radio-words-bar">Words</label><br>
+                            <input type="radio" name="words-occurrences-bar" id="radio-occurrences-bar" value="radio-occurrences">
+                            <label for="radio-occurrences-bar">Occurrences</label>
+                        </td>
+                    </tr>
+                </table>
+            </fieldset>
+            <span style="font-weight: lighter">Click on a bar to download its associated list of words</span>
+        </div>
         <div id="yearHistogram">
-            <span class="chartHeading">When did the Manuscript words appear in Middle English language?<sup><a href="#note1">1</a></sup> </span>
+            <span class="chartHeading">When are Auchinleck lexicon items first cited in the MED?<sup><a href="#note1">1</a></sup> </span>
             <fieldset>
                 <legend>Choose the options:</legend>
                 <table class="tableOptions">
@@ -67,31 +90,8 @@
             </fieldset>
             <span style="font-weight: lighter">Click on a bar to download its associated list of words</span>
         </div>
-        <div id="categoryBarChart">
-            <span class="chartHeading">How many words are there by etymology?</span>
-            <fieldset>
-                <legend>Choose the options:</legend>
-                <table class="tableOptions">
-                    <tr>
-                        <td>
-                            <select id="selectChapter" class="select" multiple></select>
-                        </td>
-                        <td>
-                            <select id="selectEtymologyBar" class="selectEtymology" multiple></select>
-                        </td>
-                        <td>
-                            <input type="radio" name="words-occurrences-bar" id="radio-words-bar" value="radio-words" checked>
-                            <label for="radio-words-bar">Words</label><br>
-                            <input type="radio" name="words-occurrences-bar" id="radio-occurrences-bar" value="radio-occurrences">
-                            <label for="radio-occurrences-bar">Occurrences</label>
-                        </td>
-                    </tr>
-                </table>
-            </fieldset>
-            <span style="font-weight: lighter">Click on a bar to download its associated list of words</span>
-        </div>
         <div id="yearScatterPlot">
-            <span class="chartHeading">When did French-based words appear in Middle English language (per poem)? <sup><a href="#note2">2</a></sup></span>
+            <span class="chartHeading">Where did words with French connections appear in each Auchinleck poem and how novel is their use in written English?<sup><a href="#note2">2</a></sup></span>
             <fieldset>
                 <legend>Choose the options:</legend>
                 <table>
