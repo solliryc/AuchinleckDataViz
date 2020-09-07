@@ -20,7 +20,6 @@
 
     <div class="main">
         <h1>Auchinleck Manuscript Lexicon</h1>
-        <h2>Visualisation de données</h2>
 
         <form id="searchForm" autocomplete="off">
             <div class="autocomplete" style="width:300px;">
@@ -109,8 +108,25 @@
                 </table>
             </fieldset>
         </div>
-        <div id="notes">
-            <span>Notes: <br></span>
+        <h5>About:</h5>
+        <div id="about" class="appendix">
+            This website was developed as part of a project funded by the Faculty of Arts at the University of Lausanne, Switzerland, which ran from February to May 2020.<br>
+            It matched words occurring in the Auchinleck Manuscript, an early fourteenth-century compilation of Middle English texts, with headwords in the Middle English Dictionary.<br>
+            Our goal was to extract information about these words’ etymologies and their dates of earliest citation in English, with particular focus falling on the Auchinleck lexis having French connections. 
+        </div>
+        <h5>Downloadable files: <br></h5>
+        <div id="downloadable" class="appendix">
+            <ul>
+                <li><a href="data/downloadable/lexicon_ota_list.csv">Auchinleck Lexicon - CSV file</a></li>
+                <li><a href="data/downloadable/lexicon_ota_matches.csv">Auchinleck Lexicon with MED matches - CSV file</a></li>
+                <li><a href="data/downloadable/lexicon_ota_med.csv">Auchinleck Lexicon with MED matches (included etymologies and years) - CSV file</a></li>
+                <li><a href="data/downloadable/lexicon_ota_poems.csv">List of the words appearing in each poem - CSV file</a></li>
+                <li><a href="data/downloadable/lexicon_ota_sample.csv">Sample of 100 random words of the Lexicon with MED matches - CSV file</a></li>
+                <li><a href="data/downloadable/word_modifications.pdf">List of modifications made to the Auchinleck words during the matching process - PDF file</a></li>
+            </ul>
+        </div>
+        <h5>Notes:</h5>
+        <div id="notes" class="appendix">
             <span id="note1"><sup>1</sup> If the "Manuscript year" option is selected and a word does not have a manuscript date, it is left out of the statistics. This also applies for the "Composition year" option.</span><br>
             <span id="note2"><sup>2</sup> If the "Manuscript year" option is selected and a word does not have a manuscript date, its earliest composition date is shown. This also applies for the "Composition year" option.</span><br>
             <span id="note3" style='display: none'><sup>3</sup> The list of most frequent words is filtered to exclude the most common words in Middle English. This stopwords list is provided by the <a href="https://github.com/cltk/cltk/blob/master/cltk/stop/middle_english/stops.py" target="_blank">Classical Language Toolkit (CLTK)</a>.</span>

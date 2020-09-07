@@ -141,7 +141,15 @@ h1, h2{
 #categoryBarChart{
   margin-bottom: 50px;
 }
-#notes{
+#yearScatterPlot {
+  margin-bottom: 50px;
+}
+ul{
+  padding-left: 20px;
+}
+.appendix {
+  padding-left: 10px;
+  margin-bottom: 20px;
   text-align: justify;
 }
 .footer {
