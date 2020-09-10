@@ -23,7 +23,7 @@
 
         <form id="searchForm" autocomplete="off">
             <div class="autocomplete" style="width:300px;">
-                <input id="searchWord" type="text" placeholder="Search a word">
+                <input id="searchWord" type="text" placeholder="Search for a word">
             </div>
             <button type="button" id="searchButton" onclick="displaySearchResult()" value="Search">Search</button>
         </form>
@@ -33,7 +33,8 @@
         <div id="wordsLollipop"></div>
         <div id="etymologyStacked"></div>
         <div id="categoryBarChart">
-            <span class="chartHeading">What are the etymological connections of the Auchinleck Manuscript’s texts?</span>
+            <h4>Chart 1</h4>
+            <h5>What are the etymological connections of the Auchinleck Manuscript’s texts?</h5>
             <fieldset>
                 <legend>Choose the options:</legend>
                 <table class="tableOptions">
@@ -56,7 +57,8 @@
             <span style="font-weight: lighter">Click on a bar to download its associated list of words</span>
         </div>
         <div id="yearHistogram">
-            <span class="chartHeading">When are Auchinleck lexicon items first cited in the MED?<sup><a href="#note1">1</a></sup> </span>
+            <h4>Chart 2</h4>
+            <h5>When are Auchinleck lexicon items first cited in the MED?<sup><a href="#note1">1</a></sup> </h5>
             <fieldset>
                 <legend>Choose the options:</legend>
                 <table class="tableOptions">
@@ -90,7 +92,8 @@
             <span style="font-weight: lighter">Click on a bar to download its associated list of words</span>
         </div>
         <div id="yearScatterPlot">
-            <span class="chartHeading">Where did words with French connections appear in each Auchinleck poem and how novel is their use in written English?<sup><a href="#note2">2</a></sup></span>
+            <h4>Chart 3</h4>
+            <h5>Where did words with French connections appear in each Auchinleck poem and how novel is their use in written English?<sup><a href="#note2">2</a></sup></h5>
             <fieldset>
                 <legend>Choose the options:</legend>
                 <table>
@@ -116,14 +119,14 @@
         </div>
         <h5>Downloadable files: <br></h5>
         <div id="downloadable" class="appendix">
-            <ul>
+            <ol>
                 <li><a href="data/downloadable/lexicon_ota_list.csv">Auchinleck Lexicon - CSV file</a></li>
+                <li><a href="data/downloadable/word_modifications.pdf">Modifications Applied - PDF file</a></li>
                 <li><a href="data/downloadable/lexicon_ota_matches.csv">Auchinleck Lexicon with MED matches - CSV file</a></li>
-                <li><a href="data/downloadable/lexicon_ota_med.csv">Auchinleck Lexicon with MED matches (included etymologies and years) - CSV file</a></li>
-                <li><a href="data/downloadable/lexicon_ota_poems.csv">List of the words appearing in each poem - CSV file</a></li>
-                <li><a href="data/downloadable/lexicon_ota_sample.csv">Sample of 100 random words of the Lexicon with MED matches - CSV file</a></li>
-                <li><a href="data/downloadable/word_modifications.pdf">List of modifications made to the Auchinleck words during the matching process - PDF file</a></li>
-            </ul>
+                <li><a href="data/downloadable/lexicon_ota_sample.csv">One Hundred Checked Matches - CSV file</a></li>
+                <li><a href="data/downloadable/lexicon_ota_med.csv">Auchinleck Lexicon with MED matches, including etymologies and dates of first citation - CSV file</a></li>
+                <li><a href="data/downloadable/lexicon_ota_poems.csv">Lexicons for the Individual Poems - CSV file</a></li>
+            </ol>
         </div>
         <h5>Notes:</h5>
         <div id="notes" class="appendix">
