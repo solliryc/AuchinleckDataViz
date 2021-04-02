@@ -956,7 +956,8 @@ function showYearHistogram() {
     // add x axis
     svgHisto.append("g")
         .attr("transform", `translate(0, ${chartHeight})`)
-        .call(d3.axisBottom(x));
+        .call(d3.axisBottom(x)
+            .tickFormat(d3.format("d")));
     
     // add y axis
     if (weightedBool) {
@@ -1116,7 +1117,7 @@ function showYearHistogram() {
         .attr('x', chartWidth/2)
         .attr('y', height - margin.top + 10)
         .attr("text-anchor", "middle")
-        .text('Years (by range of 50 years)')
+        .text('Date (by range of 50 years)')
 
     // y axis legend
     svgHisto.append('g')
@@ -1554,7 +1555,8 @@ function showYearScatterPlot() {
     
     var yAxis = svgScatter.append("g")
         .attr('transform', `translate(${margin.left}, 0)`)
-        .call(d3.axisLeft(y));
+        .call(d3.axisLeft(y)
+            .tickFormat(d3.format("d")));
 
     // Add a clipPath: everything out of this area won't be drawn.
     svgScatter.append("defs")
