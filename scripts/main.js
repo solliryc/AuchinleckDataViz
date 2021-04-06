@@ -1611,7 +1611,7 @@ function showYearScatterPlot() {
 
         // update axes with these new boundaries
         xAxis.call(d3.axisBottom(newX))
-        yAxis.call(d3.axisLeft(newY))
+        yAxis.call(d3.axisLeft(newY).tickFormat(d3.format("d")))
 
         // get the domain coordinates to find the level of zooming, to increase gradually width of bars
         xDomain = d3.extent(x.domain())
